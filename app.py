@@ -1,9 +1,12 @@
-from flask import Flask, render_template, g
+from flask import Flask, render_template, g, flash, redirect, url_for
+from forms import RegistrationForm, LoginForm
 import pymysql
 from sshtunnel import SSHTunnelForwarder
 
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+app.config['SECRET_KEY'] = '1234'
 
 # MySQL configuration
 db_config = {
@@ -52,7 +55,7 @@ def index():
     return render_template("index.html") 
 
 # Registraton Page
-@app.route('/register.html')
+@app.route('/register.html', methods=['GET', 'POST'])
 def register():
     # Create a DB connection
     connection = get_db()
@@ -65,7 +68,13 @@ def register():
     # Close the cursor and the connection
     cursor.close()
 
-    return render_template("register.html", data=data)
+    form = RegistrationForm()
+
+    if form.validate_on_submit():
+        flash(f'Account has been registered for {form.username.data}', 'success')
+        # return redirect(url_for('index'))
+
+    return render_template("register.html", data=data, title='Registration', form=form)
 
 @app.route('/about.html')
 def about():

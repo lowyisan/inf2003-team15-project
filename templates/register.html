@@ -28,7 +28,31 @@
     {% include "includes/search.html" %}
 
     <h1>Registration Page</h1>
-    <p>{{ data }}</p>
+    
+    {% for user in data %}
+        <p>{{ user[2] }}</p>
+    {% endfor %}
+
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        <fieldset>
+            <legend>Register Today</legend>
+
+            {{ form.username.label() }}
+            {{ form.username() }}
+
+            {{ form.email.label() }}
+            {{ form.email() }}
+
+            {{ form.password.label() }}
+            {{ form.password() }}
+
+            {{ form.confirm_password.label() }}
+            {{ form.confirm_password() }}
+        </fieldset>
+
+        {{ form.submit() }}
+    </form>
 
     {% include "includes/footer.html" %}
 </body>
