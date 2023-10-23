@@ -37,27 +37,27 @@
         <form method="POST" action="">
             {{ form.hidden_tag() }}
             <div class="mb-3 form-group">
-                <label for="name" class="form-label">{{ form.username.label() }}</label>
-                {{ form.username() }}
+                {{ form.username.label() }}
+                {{ form.username(class="form-control") }}
             </div>
 
             <div class="mb-3 form-group">
                 <label for="email" class="form-label">{{ form.email.label() }}</label>
-                {{ form.email() }}
+                {{ form.email(class="form-control") }}
             </div>
 
             <div class="mb-3 form-group">
                 <label for="password" class="form-label">{{ form.password.label() }}</label>
-                {{ form.password() }}
+                {{ form.password(class="form-control") }}
             </div>
 
             <div class="mb-3 form-group">
                 <label for="comfirm_password" class="form-label">{{ form.confirm_password.label() }}</label>
-                {{ form.confirm_password() }}
+                {{ form.confirm_password(class="form-control") }}
             </div>
     
             <div class="modal-footer form-group">
-                <button type="submit" class="btn btn-primary">Register</button>
+                {{ form.submit(class="btn btn-primary") }}
             </div>
         </form>
     </div>
