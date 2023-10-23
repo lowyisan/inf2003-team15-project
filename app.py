@@ -58,23 +58,29 @@ def index():
 @app.route('/register.html', methods=['GET', 'POST'])
 def register():
     # Create a DB connection
-    connection = get_db()
-    cursor = connection.cursor()
+    # connection = get_db()
+    # cursor = connection.cursor()
 
-    # Example query
-    cursor.execute("SELECT * FROM Users")
-    data = cursor.fetchall()
+    # # Example query
+    # cursor.execute("SELECT * FROM Users")
+    # data = cursor.fetchall()
 
-    # Close the cursor and the connection
-    cursor.close()
+    # # Close the cursor and the connection
+    # cursor.close()
 
     form = RegistrationForm()
 
     if form.validate_on_submit():
-        flash(f'Account has been registered for {form.username.data}', 'success')
+        flash(f'Thank you for registering, {form.username.data}. <a href="{url_for("login")}">Login Here</a>', 'success')
         # return redirect(url_for('index'))
 
-    return render_template("register.html", data=data, title='Registration', form=form)
+    return render_template("register.html", title='Registration', form=form)
+    # return render_template("register.html", data=data, title='Registration', form=form)
+
+
+@app.route('/login.html')
+def login():
+    return render_template("login.html")
 
 @app.route('/about.html')
 def about():
