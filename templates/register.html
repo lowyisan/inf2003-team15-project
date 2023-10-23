@@ -26,33 +26,41 @@
     <!-- Header End -->
 
     {% include "includes/search.html" %}
-
-    <h1>Registration Page</h1>
     
-    {% for user in data %}
+    <!-- {% for user in data %}
         <p>{{ user[2] }}</p>
-    {% endfor %}
+    {% endfor %} -->
 
-    <form method="POST" action="">
-        {{ form.hidden_tag() }}
-        <fieldset>
-            <legend>Register Today</legend>
+    
+    <div class="container">
+        <h1>Register an account</h1>
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+            <div class="mb-3 form-group">
+                <label for="name" class="form-label">{{ form.username.label() }}</label>
+                {{ form.username() }}
+            </div>
 
-            {{ form.username.label() }}
-            {{ form.username() }}
+            <div class="mb-3 form-group">
+                <label for="email" class="form-label">{{ form.email.label() }}</label>
+                {{ form.email() }}
+            </div>
 
-            {{ form.email.label() }}
-            {{ form.email() }}
+            <div class="mb-3 form-group">
+                <label for="password" class="form-label">{{ form.password.label() }}</label>
+                {{ form.password() }}
+            </div>
 
-            {{ form.password.label() }}
-            {{ form.password() }}
-
-            {{ form.confirm_password.label() }}
-            {{ form.confirm_password() }}
-        </fieldset>
-
-        {{ form.submit() }}
-    </form>
+            <div class="mb-3 form-group">
+                <label for="comfirm_password" class="form-label">{{ form.confirm_password.label() }}</label>
+                {{ form.confirm_password() }}
+            </div>
+    
+            <div class="modal-footer form-group">
+                <button type="submit" class="btn btn-primary">Register</button>
+            </div>
+        </form>
+    </div>
 
     {% include "includes/footer.html" %}
 </body>
