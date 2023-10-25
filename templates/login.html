@@ -9,7 +9,7 @@
     <div class="container-fluid header bg-white p-0">
         <div class="row g-0 align-items-center flex-column-reverse flex-md-row">
             <div class="col-md-6 p-5 mt-lg-5">
-                <h1 class="display-5 animated fadeIn mb-4">Login</h1> 
+                <h1 class="display-5 animated fadeIn mb-4">Log In</h1> 
                     <nav aria-label="breadcrumb animated fadeIn">
                     <ol class="breadcrumb text-uppercase">
                         <li class="breadcrumb-item"><a href="#">Home</a></li>
@@ -28,7 +28,7 @@
     {% include "includes/search.html" %}
     
     <div class="container">
-        <h1>Log into your account</h1>
+        <h1>Log in</h1>
         <form method="POST" action="">
             {{ form.hidden_tag() }}
 
@@ -70,7 +70,7 @@
             </div>
         </form>
         <p>
-            Don't have an account? <a href="{{ url_for('login') }}">Register here</a>
+            Don't have an account? <a href="{{ url_for('register') }}">Register here.</a>
         </p>
     </div>
 
