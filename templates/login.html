@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+{% include "includes/head.html" %}
+<title>Login</title>
+
+<body>
+    {% include "includes/navbar.html" %}
+
+    <!-- Header Start -->
+    <div class="container-fluid header bg-white p-0">
+        <div class="row g-0 align-items-center flex-column-reverse flex-md-row">
+            <div class="col-md-6 p-5 mt-lg-5">
+                <h1 class="display-5 animated fadeIn mb-4">Login</h1> 
+                    <nav aria-label="breadcrumb animated fadeIn">
+                    <ol class="breadcrumb text-uppercase">
+                        <li class="breadcrumb-item"><a href="#">Home</a></li>
+                        <li class="breadcrumb-item"><a href="#">Pages</a></li>
+                        <li class="breadcrumb-item text-body active" aria-current="page">Login</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="col-md-6 animated fadeIn">
+                <img class="img-fluid" src="../static/img/header.jpg" alt="">
+            </div>
+        </div>
+    </div>
+    <!-- Header End -->
+
+    {% include "includes/search.html" %}
+    
+    <div class="container">
+        <h1>Log into your account</h1>
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+
+            <!-- Email Field -->
+            <div class="mb-3 form-group">
+                {{ form.email.label() }}
+
+                {% if form.email.errors %}
+                    {{ form.email(class="form-control is-invalid") }}
+                    <div class="is-invalid">
+                        {% for error in form.email.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                {{ form.email(class="form-control") }}
+                {% endif %}
+            </div>
+
+            <!-- Password Field -->
+            <div class="mb-3 form-group">
+                {{ form.password.label() }}
+
+                {% if form.password.errors %}
+                    {{ form.password(class="form-control is-invalid") }}
+                    <div class="is-invalid">
+                        {% for error in form.password.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                {{ form.password(class="form-control") }}
+                {% endif %}
+            </div>
+    
+            <!-- Submit Button -->
+            <div class="modal-footer form-group">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+        <p>
+            Don't have an account? <a href="{{ url_for('login') }}">Register here</a>
+        </p>
+    </div>
+
+    {% include "includes/footer.html" %}
+</body>
+</html>

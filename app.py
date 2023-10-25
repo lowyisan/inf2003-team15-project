@@ -2,6 +2,7 @@ from flask import Flask, render_template, g, flash, redirect, url_for
 from forms import RegistrationForm, LoginForm
 import pymysql
 from sshtunnel import SSHTunnelForwarder
+from passlib.hash import pbkdf2_sha256
 
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -77,14 +78,16 @@ def register():
     form = RegistrationForm()
 
     if form.validate_on_submit():
-        # Insert into DB
+        # Hash password
+        hashed_password = pbkdf2_sha256.hash(form.password.data)
+
         # Create a DB connection
         connection = get_db()
         cursor = connection.cursor()
 
         # Prepared statement for inserting to Users table
         query = "INSERT INTO Users (name, email, phone, password) VALUES (%s, %s, %s, %s)"
-        values = (form.username.data, form.email.data, form.phone.data, form.password.data)
+        values = (form.username.data, form.email.data, form.phone.data, hashed_password)
 
         # Execute the prepared statement to insert user
         try:
@@ -103,9 +106,36 @@ def register():
     # return render_template("register.html", data=data, title='Registration', form=form)
 
 
-@app.route('/login.html')
+@app.route('/login.html', methods=['GET', 'POST'])
 def login():
-    return render_template("login.html")
+    # Create login form
+    form = LoginForm()
+
+    # Validate login form
+    if form.validate_on_submit():
+        # Retrieve the user's hashed password from the database
+        connection = get_db()
+        cursor = connection.cursor()
+
+        query = "SELECT password FROM Users WHERE email = %s"
+        cursor.execute(query, (form.email.data,))
+        result = cursor.fetchone()
+
+        if result is not None:
+            stored_hashed_password = result[0]
+
+            # Check if the provided password matches the stored hashed password
+            if pbkdf2_sha256.verify(form.password.data, stored_hashed_password):
+                flash(f'Login successful, welcome {form.email.data}!', 'success')
+                return redirect(url_for('index'))
+            else:
+                flash('Login failed. Invalid email or password.', 'error')
+        else:
+            flash('Login failed. Invalid email or password.', 'error')
+
+        cursor.close()
+
+    return render_template("login.html", form=form)
 
 @app.route('/about.html')
 def about():
