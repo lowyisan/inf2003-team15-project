@@ -17,15 +17,19 @@ db_config = {
 
 # SSH Tunnel Setup
 def create_ssh_tunnel():
-    server = SSHTunnelForwarder(
-        '35.212.167.35',
-        ssh_username='dev',
-        ssh_password='iLoveDonuts99',
-        ssh_port=22,
-        remote_bind_address=('127.0.0.1', 3306)
-    )
-    server.start()
-    return server
+    try:
+        server = SSHTunnelForwarder(
+            '35.212.167.35',
+            ssh_username='dev',
+            ssh_password='iLoveDonuts99',
+            ssh_port=22,
+            remote_bind_address=('127.0.0.1', 3306)
+        )
+        server.start()
+        return server
+    
+    except Exception as e:
+        return None
 
 # Create the SSH tunnel when the application starts
 ssh_server = create_ssh_tunnel()
@@ -41,17 +45,19 @@ def get_db():
     return g.db_connection
 
 # Before the first request, check the SSH tunnel
-@app.before_request
-def check_ssh_tunnel():
-    if not ssh_server.is_active:
-        print("SSH tunnel failed to establish.")
-        # You could raise an exception here or handle it as appropriate
-    else:
-        print("SSH tunnel is active")
+# @app.before_request
+# def check_ssh_tunnel():
+#     if not ssh_server.is_active:
+#         print("SSH tunnel failed to establish.")
+#         # You could raise an exception here or handle it as appropriate
+#     else:
+#         print("SSH tunnel is active")
 
 # Landing Page
 @app.route('/')
 def index(): 
+    if ssh_server is None:
+        flash("SSH tunnel failed to establish. Error: Unable to connect to the SSH server.")
     return render_template("index.html") 
 
 # Registraton Page
