@@ -77,8 +77,25 @@ def register():
     form = RegistrationForm()
 
     if form.validate_on_submit():
-        flash(f'Thank you for registering, {form.username.data}. <a href="{url_for("login")}">Login Here</a>', 'success')
-        # return redirect(url_for('index'))
+        # Insert into DB
+        # Create a DB connection
+        connection = get_db()
+        cursor = connection.cursor()
+
+        # Insert new user using prepared statement
+        query = "INSERT INTO Users (name, email, password) VALUES (%s, %s, %s)"
+        # query = "INSERT INTO Users (name, email, phone, password) VALUES (%s, %s, %s, %s)"
+        values = (form.username.data, form.email.data, form.password.data)
+
+        try:
+            cursor.execute(query, values)
+            connection.commit()
+            flash(f'Thank you for registering, {form.username.data}. <a href="{url_for("login")}">Login Here</a>', 'success')
+        except pymysql.Error as e:
+            connection.rollback()
+            flash(f'An error occurred while registering: {e}', 'error')
+        finally:
+            cursor.close()
 
     return render_template("register.html", title='Registration', form=form)
     # return render_template("register.html", data=data, title='Registration', form=form)
