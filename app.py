@@ -82,18 +82,20 @@ def register():
         connection = get_db()
         cursor = connection.cursor()
 
-        # Insert new user using prepared statement
-        query = "INSERT INTO Users (name, email, password) VALUES (%s, %s, %s)"
-        # query = "INSERT INTO Users (name, email, phone, password) VALUES (%s, %s, %s, %s)"
-        values = (form.username.data, form.email.data, form.password.data)
+        # Prepared statement for inserting to Users table
+        query = "INSERT INTO Users (name, email, phone, password) VALUES (%s, %s, %s, %s)"
+        values = (form.username.data, form.email.data, form.phone.data, form.password.data)
 
+        # Execute the prepared statement to insert user
         try:
             cursor.execute(query, values)
             connection.commit()
             flash(f'Thank you for registering, {form.username.data}. <a href="{url_for("login")}">Login Here</a>', 'success')
+
         except pymysql.Error as e:
             connection.rollback()
             flash(f'An error occurred while registering: {e}', 'error')
+
         finally:
             cursor.close()
 

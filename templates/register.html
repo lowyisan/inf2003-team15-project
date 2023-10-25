@@ -68,6 +68,22 @@
                 {% endif %}
             </div>
 
+            <!-- Phone Field -->
+            <div class="mb-3 form-group">
+                {{ form.phone.label() }}
+
+                {% if form.phone.errors %}
+                    {{ form.phone(class="form-control is-invalid") }}
+                    <div class="is-invalid">
+                        {% for error in form.phone.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.phone(class="form-control") }}
+                {% endif %}
+            </div>
+
             <!-- Password Field -->
             <div class="mb-3 form-group">
                 {{ form.password.label() }}
