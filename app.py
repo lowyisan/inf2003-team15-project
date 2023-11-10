@@ -208,7 +208,28 @@ def outlieranalysis():
 
 @app.route('/time-series-analysis.html')
 def timeseriesanalysis():
-    return render_template("time-series-analysis.html")
+    connection = get_db()
+    cursor = connection.cursor()
+    query = "SELECT h.town_estate, t.transaction_year,CASE WHEN t.transaction_month IN (1, 2, 3) THEN 'Q1' WHEN t.transaction_month IN (4, 5, 6) THEN 'Q2' WHEN t.transaction_month IN (7, 8, 9) THEN 'Q3' WHEN t.transaction_month IN (10, 11, 12) THEN 'Q4' END AS quarter, AVG(t.price) AS mean_price FROM Transaction t JOIN HDB h ON t.hdb_id = h.hdb_id WHERE t.transaction_month IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) GROUP BY h.town_estate, t.transaction_year, quarter ORDER BY h.town_estate, t.transaction_year, quarter;"
+    cursor.execute(query)
+    result = cursor.fetchall()
+    cursor.close()
+    df = pd.DataFrame(result, columns=['town_estate', 'transaction_year','quarter','mean_price'])
+    figures = []
+    for town_estate in df['town_estate'].unique():
+        fig = px.line(
+            df[df['town_estate'] == town_estate],
+            x='quarter',
+            y='mean_price',
+            color='transaction_year',
+            markers=True,
+            title=f'Mean Price Over Years - {town_estate}'
+        )
+    
+        figures.append(fig)
+    # Convert the Plotly figures to HTML
+    chart_html = [fig.to_html(full_html=False) for fig in figures]
+    return render_template("time-series-analysis.html", chart_html = chart_html)
 
 @app.route('/price-trend-analysis.html')
 def pricetrendanalysis():
@@ -216,7 +237,28 @@ def pricetrendanalysis():
 
 @app.route('/rooms-analysis.html')
 def roomsanalysis():
-    return render_template("rooms-analysis.html")
+    connection = get_db()
+    cursor = connection.cursor()
+    query = "SELECT t.transaction_year, h.town_estate, ROUND(AVG(t.price), 2) AS mean_price, h.flat_type FROM Transaction t JOIN HDB h ON t.hdb_id = h.hdb_id GROUP BY t.transaction_year, h.town_estate, h.flat_type;"
+    cursor.execute(query)
+    result = cursor.fetchall()
+    cursor.close()
+    df = pd.DataFrame(result, columns=['transaction_year', 'town_estate', 'mean_price', 'flat_type'])
+    figures = []
+    for town_estate in df['town_estate'].unique():
+        fig = px.line(
+            df[df['town_estate'] == town_estate],
+            x='transaction_year',
+            y='mean_price',
+            color='flat_type',
+            markers=True,
+            title=f'Mean Price Over Years - {town_estate}'
+        )
+    
+        figures.append(fig)
+    # Convert the Plotly figures to HTML
+    chart_html = [fig.to_html(full_html=False) for fig in figures]
+    return render_template("rooms-analysis.html", chart_html = chart_html)
 
 # Teardown function to close the database connection
 @app.teardown_appcontext
