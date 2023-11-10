@@ -3,6 +3,9 @@ from forms import RegistrationForm, LoginForm
 import pymysql
 from sshtunnel import SSHTunnelForwarder
 from passlib.hash import pbkdf2_sha256
+import pandas as pd
+import matplotlib.pyplot as plt
+import plotly.express as px
 
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -173,9 +176,31 @@ def appointment():
 def locationanalysis():
     return render_template("location-analysis.html")
 
-@app.route('/size-bedroom-analysis.html')
-def sizebedroomanalysis():
-    return render_template("size-bedroom-analysis.html")
+@app.route('/size-analysis.html')
+def sizeanalysis():
+    connection = get_db()
+    cursor = connection.cursor()
+    query = "SELECT t.transaction_year,h.town_estate, CASE WHEN h.floorAreaSQM <= 50 THEN '0-50 sqm' WHEN h.floorAreaSQM <= 100 THEN '51-100 sqm' WHEN h.floorAreaSQM <= 150 THEN '101-150 sqm' ELSE '151+ sqm' END AS sqm_range, ROUND(AVG(t.price), 2) AS mean_price FROM Transaction t JOIN HDB h ON t.hdb_id = h.hdb_id GROUP BY t.transaction_year,h.town_estate,sqm_range;"
+    cursor.execute(query)
+    result = cursor.fetchall()
+    cursor.close()
+    df = pd.DataFrame(result, columns=['transaction_year', 'town_estate', 'sqm_range', 'mean_price'])
+    figures = []
+    for town_estate in df['town_estate'].unique():
+        fig = px.line(
+            df[df['town_estate'] == town_estate],
+            x='transaction_year',
+            y='mean_price',
+            color='sqm_range',
+            markers=True,
+            title=f'Mean Price Over Years - {town_estate}'
+        )
+    
+        figures.append(fig)
+
+    # Convert the Plotly figures to HTML
+    chart_html = [fig.to_html(full_html=False) for fig in figures]
+    return render_template("size-analysis.html", chart_html = chart_html)
 
 @app.route('/outlier-analysis.html')
 def outlieranalysis():
@@ -188,6 +213,10 @@ def timeseriesanalysis():
 @app.route('/price-trend-analysis.html')
 def pricetrendanalysis():
     return render_template("price-trend-analysis.html")
+
+@app.route('/rooms-analysis.html')
+def roomsanalysis():
+    return render_template("rooms-analysis.html")
 
 # Teardown function to close the database connection
 @app.teardown_appcontext
