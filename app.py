@@ -169,6 +169,26 @@ def error404():
 def appointment():
     return render_template("appointment.html")
 
+@app.route('/location-analysis.html')
+def locationanalysis():
+    return render_template("location-analysis.html")
+
+@app.route('/size-bedroom-analysis.html')
+def sizebedroomanalysis():
+    return render_template("size-bedroom-analysis.html")
+
+@app.route('/outlier-analysis.html')
+def outlieranalysis():
+    return render_template("outlier-analysis.html")
+
+@app.route('/time-series-analysis.html')
+def timeseriesanalysis():
+    return render_template("time-series-analysis.html")
+
+@app.route('/price-trend-analysis.html')
+def pricetrendanalysis():
+    return render_template("price-trend-analysis.html")
+
 # Teardown function to close the database connection
 @app.teardown_appcontext
 def close_db_connection(exception):
