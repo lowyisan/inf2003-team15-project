@@ -157,9 +157,9 @@ def propertyagent():
 def propertytype():
     return render_template("property-type.html")
 
-@app.route('/testimonial.html')
+@app.route('/analysis.html')
 def testimonial():
-    return render_template("testimonial.html")
+    return render_template("analysis.html")
 
 @app.route('/404.html')
 def error404():
