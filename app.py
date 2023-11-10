@@ -158,7 +158,7 @@ def propertytype():
     return render_template("property-type.html")
 
 @app.route('/analysis.html')
-def testimonial():
+def analysis():
     return render_template("analysis.html")
 
 @app.route('/404.html')
