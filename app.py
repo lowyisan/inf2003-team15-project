@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 from flask import request
+import plotly.graph_objects as go
 
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -287,7 +288,35 @@ def timeseriesanalysis():
 
 @app.route('/price-trend-analysis.html')
 def pricetrendanalysis():
-    return render_template("price-trend-analysis.html")
+    connection = get_db()
+    cursor = connection.cursor()
+    query = "SELECT t.transaction_year, hdb.town_estate, AVG(price) as sumOfPrices FROM Transaction t, HDB hdb WHERE t.hdb_id = hdb.hdb_id GROUP BY transaction_year, town_estate;"
+    cursor.execute(query)
+    result = cursor.fetchall()
+    cursor.close()
+    df = pd.DataFrame(result, columns=['Year', 'town_estate','Average Price'])
+    figures = []
+    for town_estate in df['town_estate'].unique():
+        fig = go.Figure()
+
+        # Add traces for lines and markers
+        fig.add_trace(go.Scatter(
+            x=df[df['town_estate'] == town_estate]['Year'],
+            y=df[df['town_estate'] == town_estate]['Average Price'],
+            mode='lines+markers',
+            name=f'Price Trend - {town_estate}'
+        ))
+
+        # Update layout and styling if needed
+        fig.update_layout(
+            title=f'Price Trend Over Years (2012 - 2021) - {town_estate}',
+            xaxis_title='Year',
+            yaxis_title='Average Price',
+        )
+
+        figures.append(fig)
+    chart_html = [fig.to_html(full_html=False) for fig in figures]
+    return render_template("price-trend-analysis.html", chart_html = chart_html)
 
 @app.route('/rooms-analysis.html')
 def roomsanalysis():
