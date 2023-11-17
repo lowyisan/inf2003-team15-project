@@ -2,16 +2,45 @@
 <html lang="en">
 
 {% include "includes/head.html" %}
-
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <body>
         {% include "includes/navbar.html" %}
+        <!-- Header Start -->
+        <div class="container-fluid header bg-white p-0">
+            <div class="row g-0 align-items-center flex-column-reverse flex-md-row">
+                <div class="col-md-6 p-5 mt-lg-5">
+                    <h1 class="display-5 animated fadeIn mb-4">Location Analysis</h1> 
+                    <h4>Take a look at our most well doing and least well doing town estates for each year</h4>
+                    <h5>Giving you an analysis on where is most sought after for each year by looking at sales revenue</h5>
 
-        <!-- Testimonial Start -->
-        <div class="container-xxl py-5">
-            
+                </div>
+                <div class="col-md-6 animated fadeIn">
+                    <img class="img-fluid" src="../static/img/hdb1.jpg" alt="">
+                </div>
+            </div>
         </div>
-        <!-- Testimonial End -->
+
+        <br>
+        <h3 style="text-align: center; font-style: italic;">Best Sales Revenue Estates</h3>
+        <!-- Display DataFrame in a table -->
+        <div class="container">
+            {{ data | safe }}
+        </div>
+
+        <br>
+        <h3 style="text-align: center; font-style: italic;">Worst Sales Revenue Estates</h3>
+        <!-- Display DataFrame in a table -->
+        <div class="container">
+            {{ data1 | safe }}
+        </div>
         
+
+        <!-- in line css to make the headers stay to the left cause currently its in the right -->
+        <style>
+            th {
+                text-align: left;
+            }
+        </style>
 
         <!-- Footer Start -->
         <div class="container-fluid bg-dark text-white-50 footer pt-5 mt-5 wow fadeIn" data-wow-delay="0.1s">
@@ -105,6 +134,8 @@
     <script src="../static/lib/easing/easing.min.js"></script>
     <script src="../static/lib/waypoints/waypoints.min.js"></script>
     <script src="../static/lib/owlcarousel/owl.carousel.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
 
     <!-- Template Javascript -->
     <script src="../static/js/main.js"></script>

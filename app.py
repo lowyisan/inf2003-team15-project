@@ -174,7 +174,36 @@ def appointment():
 
 @app.route('/location-analysis.html')
 def locationanalysis():
-    return render_template("location-analysis.html")
+    connection = get_db()
+    cursor = connection.cursor()
+
+    # Query for highest sales revenue location
+    query = "SELECT transaction_year as Year, town_estate as TownEstate, total_price as TotalCost FROM (SELECT transaction_year, town_estate, SUM(price) AS total_price, ROW_NUMBER() OVER (PARTITION BY transaction_year ORDER BY SUM(price) DESC) AS rowNumber FROM HDB hdb JOIN Transaction t ON hdb.hdb_id = t.hdb_id GROUP BY transaction_year, town_estate ORDER BY transaction_year, total_price DESC) AS t WHERE t.rowNumber = 1 ORDER BY transaction_year;"
+    cursor.execute(query)
+    result = cursor.fetchall()
+    df = pd.DataFrame(result, columns=['Year', 'Town Estate', 'Total Sales Revenue'])
+    # Add $ to the 'Cost' column
+    df['Total Sales Revenue'] = '$ ' + df['Total Sales Revenue'].astype(str)
+    html_table = df.to_html(classes='table table-striped table-bordered table-hover', index=False)
+
+    # Create a new cursor for the second query
+    cursor1 = connection.cursor()
+
+    # Query for lowest sales revenue location
+    query1 = "SELECT transaction_year as Year, town_estate as TownEstate, total_price as TotalCost FROM (SELECT transaction_year, town_estate, SUM(price) AS total_price, ROW_NUMBER() OVER (PARTITION BY transaction_year ORDER BY SUM(price) ASC) AS rowNumber FROM HDB hdb JOIN Transaction t ON hdb.hdb_id = t.hdb_id GROUP BY transaction_year, town_estate ORDER BY transaction_year, total_price ASC) AS t WHERE t.rowNumber = 1 ORDER BY transaction_year;"
+    cursor1.execute(query1)
+    result1 = cursor1.fetchall()
+    df1 = pd.DataFrame(result1, columns=['Year', 'Town Estate', 'Total Sales Revenue'])
+    # Add $ to the 'Cost' column
+    df1['Total Sales Revenue'] = '$ ' + df1['Total Sales Revenue'].astype(str)
+    html_table1 = df1.to_html(classes='table table-striped table-bordered table-hover', index=False)
+
+    cursor.close()
+    cursor1.close()
+
+    return render_template("location-analysis.html", data=html_table, data1=html_table1)
+
+
 
 @app.route('/size-analysis.html')
 def sizeanalysis():
