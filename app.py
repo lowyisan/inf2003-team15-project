@@ -1,3 +1,4 @@
+import textwrap
 from flask import Flask, render_template, g, flash, redirect, url_for
 from forms import RegistrationForm, LoginForm
 import pymysql
@@ -6,6 +7,7 @@ from passlib.hash import pbkdf2_sha256
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
+from flask import request
 
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -172,6 +174,7 @@ def error404():
 def appointment():
     return render_template("appointment.html")
 
+
 @app.route('/location-analysis.html')
 def locationanalysis():
     connection = get_db()
@@ -204,7 +207,6 @@ def locationanalysis():
     return render_template("location-analysis.html", data=html_table, data1=html_table1)
 
 
-
 @app.route('/size-analysis.html')
 def sizeanalysis():
     connection = get_db()
@@ -233,7 +235,30 @@ def sizeanalysis():
 
 @app.route('/outlier-analysis.html')
 def outlieranalysis():
-    return render_template("outlier-analysis.html")
+    connection = get_db()
+    cursor = connection.cursor()
+
+    start_year = 2012
+    end_year = 2021
+
+    df_all_years = pd.DataFrame(columns=['Year', 'Price', 'Street Name', 'Block', 'Town Estate', 'Flat Type'])
+
+    # do a query loop because if do all at once will crash, once do query loop, concat the dataframe
+
+    for selected_year in range(start_year, end_year + 1):
+    # Query for highest sales revenue location
+        query = f"SELECT T.transaction_year, T.price, hdb.street_name, hdb.block, hdb.town_estate, hdb.flat_type FROM (SELECT transaction_year, hdb_id, price,STDDEV_POP(price) OVER (PARTITION BY transaction_year) AS stddev FROM Transaction WHERE transaction_year = {selected_year}) AS T JOIN HDB hdb ON T.hdb_id = hdb.hdb_id WHERE T.price > T.stddev * 3 OR T.price < T.stddev / 3 ORDER BY T.transaction_year, T.price DESC LIMIT 1;"
+        cursor.execute(query)
+        result = cursor.fetchall()
+        df_year = pd.DataFrame(result, columns=['Year', 'Price', 'Street Name', 'Block', 'Town Estate', 'Flat Type'])
+        # Concatenate the current year's results to the overall DataFrame
+        df_all_years = pd.concat([df_all_years, df_year], ignore_index=True)
+
+    df_all_years['Price'] = '$ ' + df_all_years['Price'].astype(str)
+    html_table = df_all_years.to_html(classes='table table-striped table-bordered table-hover', index=False)
+
+
+    return render_template("outlier-analysis.html", data=html_table)
 
 @app.route('/time-series-analysis.html')
 def timeseriesanalysis():

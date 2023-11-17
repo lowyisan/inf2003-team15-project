@@ -6,12 +6,45 @@
 <body>
         {% include "includes/navbar.html" %}
 
+        <!-- Header Start -->
+        <div class="container-fluid header bg-white p-0">
+            <div class="row g-0 align-items-center flex-column-reverse flex-md-row">
+                <div class="col-md-6 p-5 mt-lg-5">
+                    <h1 class="display-5 animated fadeIn mb-4">Outlier Detection For Each Year</h1> 
+                    <h4>These units identified as outliers exhibit exceptionally high values compared to the average, signaling a notable deviation from the general trend.</h4>
+
+                </div>
+                <div class="col-md-6 animated fadeIn">
+                    <img class="img-fluid" src="../static/img/hdb3.jpg" alt="">
+                </div>
+            </div>
+        </div>
+
+
         <!-- Testimonial Start -->
         <div class="container-xxl py-5">
-            
-        </div>
-        <!-- Testimonial End -->
+
+
         
+        </div>
+
+        
+        <!-- Testimonial End -->
+
+        <br>
+        <h3 style="text-align: center; font-style: italic;">Outlier</h3>
+        <!-- Display DataFrame in a table -->
+        <div class="container">
+            {{ data | safe }}
+        </div>
+        
+        <!-- in line css to make the headers stay to the left cause currently its in the right -->
+        <style>
+            th {
+                text-align: left;
+            }
+        </style>
+
 
         <!-- Footer Start -->
         <div class="container-fluid bg-dark text-white-50 footer pt-5 mt-5 wow fadeIn" data-wow-delay="0.1s">
