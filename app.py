@@ -1,5 +1,5 @@
 import textwrap
-from flask import Flask, render_template, g, flash, redirect, url_for
+from flask import Flask, render_template, g, flash, redirect, url_for, request, jsonify
 from forms import RegistrationForm, LoginForm
 import pymysql
 from sshtunnel import SSHTunnelForwarder
@@ -7,8 +7,9 @@ from passlib.hash import pbkdf2_sha256
 import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
-from flask import request
 import plotly.graph_objects as go
+from datetime import datetime
+
 
 app = Flask(__name__, template_folder="templates")
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -44,12 +45,21 @@ ssh_server = create_ssh_tunnel()
 # Function for creating DB Connection
 def get_db():
     if not hasattr(g, 'db_connection'):
+        ssh_server = create_ssh_tunnel()
+
+        if ssh_server is None:
+            # Handle the case where the SSH tunnel failed to establish
+            flash("SSH tunnel failed to establish. Error: Unable to connect to the SSH server.")
+            return None
+
         g.db_connection = pymysql.connect(
             host='127.0.0.1',
             port=ssh_server.local_bind_port,
             **db_config
         )
+
     return g.db_connection
+
 
 # Before the first request, check the SSH tunnel
 # @app.before_request
@@ -66,6 +76,7 @@ def index():
     if ssh_server is None:
         flash("SSH tunnel failed to establish. Error: Unable to connect to the SSH server.")
     return render_template("index.html") 
+    
 
 # Registraton Page
 @app.route('/register.html', methods=['GET', 'POST'])
@@ -171,9 +182,218 @@ def analysis():
 def error404():
     return render_template("404.html")
 
-@app.route('/appointment.html')
+
+@app.route('/appointment.html', methods=['GET', 'POST'])
 def appointment():
-    return render_template("appointment.html")
+    connection = get_db()
+    cursor = connection.cursor()
+
+    if request.method == 'POST':
+        filter_agency_name = request.form.get('filter_agency_name')
+        filter_agent_title = request.form.get('filter_agent_title')
+
+        query = "SELECT DISTINCT u.name, a.agentTitle, a.CEANumber, ag.agencyName " \
+                "FROM Users u, Agency ag, Agents a " \
+                "WHERE u.userID = a.userID AND ag.agencyLicenseNo = a.agencyLicenseNo"
+
+        if filter_agency_name:
+            query += f" AND ag.agencyName = '{filter_agency_name}'"
+
+        if filter_agent_title:
+            query += f" AND a.agentTitle = '{filter_agent_title}'"
+
+        cursor.execute(query)
+    else:
+        # If it's a GET request without filters, retrieve all agents
+        query = "SELECT DISTINCT u.name, a.agentTitle, a.CEANumber, ag.agencyName " \
+                "FROM Users u, Agency ag, Agents a " \
+                "WHERE u.userID = a.userID AND ag.agencyLicenseNo = a.agencyLicenseNo"
+        cursor.execute(query)
+
+    result = cursor.fetchall()
+
+    # Retrieve available agency names and agent titles for populating the filter dropdowns
+    cursor.execute("SELECT DISTINCT agencyName FROM Agency")
+    agency_names = cursor.fetchall()
+
+    cursor.execute("SELECT DISTINCT agentTitle FROM Agents")
+    agent_titles = cursor.fetchall()
+
+    return render_template("appointment.html", agents=result, agency_names=agency_names, agent_titles=agent_titles)
+
+
+@app.route('/create-appointment', methods=['POST'])
+def create_appointment():
+    agent_name = request.form['agentName']
+    date = request.form['date']
+    time = request.form['time']
+
+    # Create a DB connection
+    connection = get_db()
+    cursor = connection.cursor()
+    
+    # Combine date and time into a single datetime object
+    appt_datetime = datetime.strptime(f'{date} {time}', '%Y-%m-%d %H:%M')
+
+    # Check if the appointment time is on the hour
+    if appt_datetime.minute != 0 or appt_datetime.second != 0:
+        flash('Appointments can only be booked on the hour (e.g., 1:00, 2:00).', 'error')
+        return redirect(url_for('appointment'))
+    
+     # Check if the appointment time is in the past
+    if appt_datetime < datetime.now():
+        flash('Cannot book an appointment in the past. Please select a future time.', 'error')
+        return redirect(url_for('appointment'))
+    
+    # Query the database to check if the appointment slot is already taken
+    cursor.execute("""
+        SELECT Appointments.* FROM Appointments
+        JOIN Agents ON Appointments.CEANumber = Agents.CEANumber
+        JOIN Users ON Agents.userID = Users.userID
+        WHERE Users.name = %s AND Appointments.ApptDateTime = %s
+    """, (agent_name, appt_datetime))
+    existing_appointment = cursor.fetchone()
+    
+    # If an existing appointment is found, flash a message and redirect
+    if existing_appointment:
+        flash('This appointment slot is already taken. Please choose another date or time.', 'error')
+        return redirect(url_for('appointment'))
+    
+    else:
+        cursor.execute("""
+             INSERT INTO Appointments (ApptDateTime, CEANumber, UserID)
+         VALUES (%s, (SELECT CEANumber FROM Agents WHERE userID = (SELECT userID FROM Users WHERE name = %s)), %s)
+     """, (appt_datetime, agent_name, 1))
+        connection.commit()
+    
+    # Flash success message and redirect to the appointments view page
+    flash('Your appointment has been successfully booked.', 'success')
+    return redirect(url_for('appointment'))
+
+def parse_datetime(date_str, time_str):
+    try:
+        return datetime.strptime(f'{date_str} {time_str}', '%Y-%m-%d %H:%M:%S')
+    except ValueError:
+        return datetime.strptime(f'{date_str} {time_str}', '%Y-%m-%d %H:%M')
+
+
+@app.route('/update-appointment', methods=['POST'])
+def update_appointment():
+    if request.method == 'POST':
+        # Create a DB connection
+        connection = get_db()
+        cursor = connection.cursor()
+
+        # Get the edited appointment details from the form
+        appt_id = request.form.get('apptId')
+        date = request.form.get('date')
+        time = request.form.get('time')
+        agent_name = request.form.get('agentName')  # Ensure this field is included in your form
+
+        # Combine date and time into a single datetime object
+        appt_datetime = parse_datetime(date, time)
+        print(appt_datetime)
+
+        # Check if the appointment time is on the hour
+        if appt_datetime.minute != 0 or appt_datetime.second != 0:
+            flash('Appointments can only be booked on the hour (e.g., 1:00, 2:00).', 'error')
+            return redirect(url_for('view_appointments'))
+
+        # Check if the appointment time is in the past
+        if appt_datetime < datetime.now():
+            flash('Cannot book an appointment in the past. Please select a future time.', 'error')
+            return redirect(url_for('view_appointments'))
+
+        # Check if the new appointment time is already booked
+        cursor.execute("""
+            SELECT Appointments.* FROM Appointments
+            JOIN Agents ON Appointments.CEANumber = Agents.CEANumber
+            JOIN Users ON Agents.userID = Users.userID
+            WHERE Users.name = %s AND Appointments.ApptDateTime = %s AND Appointments.ApptID != %s
+        """, (agent_name, appt_datetime, appt_id))
+        if cursor.fetchone():
+            flash('This appointment time is already booked. Please choose another time.', 'error')
+            return redirect(url_for('view_appointments'))
+        else: 
+            # Update the appointment in the database
+            query = "UPDATE Appointments SET ApptDateTime = %s WHERE ApptID = %s"
+            cursor.execute(query, (appt_datetime, appt_id))
+            connection.commit()
+            flash('Appointment updated successfully.', 'success')
+    
+       
+
+        return redirect(url_for('view_appointments'))
+
+
+@app.route('/delete-appointment', methods=['POST'])
+def delete_appointment():
+    if request.method == 'POST':
+        try:
+            # Extract appointment data from the form
+            apptId = request.form.get('apptId')  # Adjust this based on your form field
+            
+            # Create a DB connection
+            connection = get_db()
+            cursor = connection.cursor()
+
+            query = "DELETE FROM Appointments WHERE ApptID = %s"
+            print(apptId)
+            cursor.execute(query, apptId)
+            connection.commit()
+
+            # Return a JSON response indicating success
+            response = {'status': 'success', 'message': 'Appointment deleted successfully'}
+    
+
+    
+        except pymysql.Error as e:
+            connection.rollback()
+            flash(f"Error deleting appointment: {e}", "error")
+            response = {'status': 'error', 'message': f"Error deleting appointment: {e}"}
+
+
+        finally:
+            cursor.close()
+
+        return jsonify(response)
+            
+
+@app.route('/view-appointments.html')
+def view_appointments():
+
+    # Retrieve the user's bookings from the database
+    connection = get_db()
+    cursor = connection.cursor()
+
+    try:
+        # Construct the SQL query to retrieve the user's appointments (set userID to 1 temporarily for demonstration)
+        #query = "SELECT a.* FROM Appointments a, Users u WHERE a.UserID = 1"
+
+        # Displays all agents
+        query = "SELECT ap.ApptID, ap.ApptDateTime, u.name FROM Users u, Agents a, Appointments ap WHERE u.UserID = a.UserID AND a.CEANumber = ap.CEANumber AND ap.UserID = 1"
+
+        #query = "SELECT u.name FROM Users u, Agents a, Appointments app WHERE a.UserID = 1 AND u.UserID = a.UserID AND a.CEANumber = app.CEANumber"
+        # query = "SELECT a.ApptID, a.ApptDateTime, u.name FROM Appointments a, Users u, Agents ag WHERE a.UserID = 1 AND a.CEANumber = ag.CEANumber AND"
+        cursor.execute(query)  # Set userID to 1 temporarily
+        # Fetch all the user's appointments
+        appointments = cursor.fetchall()
+        
+        if not appointments:
+            flash("You currently have no appointments.", "info")
+
+        return render_template("view-appointments.html", appointments=appointments)
+
+    except pymysql.Error as e:
+        flash(f"An error occurred while retrieving your appointments: {e}", "error")
+
+    finally:
+        cursor.close()
+
+    return render_template("view-appointments.html")
+
+
+
 
 
 @app.route('/location-analysis.html')

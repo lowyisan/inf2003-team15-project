@@ -1,0 +1,63 @@
+.agents-table, .bookings-table {
+    margin-top: 5%;
+
+}
+
+.btn {
+    transition: .5s;
+}
+
+/* Style the form container */
+.form-container {
+    background-color: #f8f9fa; /* Background color */
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add a shadow for depth */
+}
+
+/* Style labels */
+label {
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* Style select inputs */
+select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+.edit-appointment-btn{
+    background-color: #00B98E; /* Button color */
+    color: #fff; /* Text color */
+
+}
+
+.edit-appointment-btn:hover{
+    background-color: #059876; /* Button color */
+    color: #fff; /* Text color */
+
+}
+/* Style the submit button */
+input[type="submit"] {
+    background-color: #00B98E; /* Button color */
+    color: #fff; /* Text color */
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+/* Style the submit button on hover */
+input[type="submit"]:hover {
+    background-color: #059876;
+}
+
+/* Custom CSS */
+.modal-top {
+    z-index: 10000; /* Adjust this value if needed to ensure it's above other elements */
+}
