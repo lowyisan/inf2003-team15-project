@@ -1,5 +1,5 @@
 import textwrap
-from flask import Flask, render_template, g, flash, redirect, url_for, request, jsonify
+from flask import Flask, render_template, g, flash, redirect, url_for, request, jsonify, session
 from forms import RegistrationForm, LoginForm
 import pymysql
 from sshtunnel import SSHTunnelForwarder
@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
+
 
 
 app = Flask(__name__, template_folder="templates")
@@ -134,15 +135,17 @@ def login():
         connection = get_db()
         cursor = connection.cursor()
 
-        query = "SELECT password FROM Users WHERE email = %s"
+        query = "SELECT userID, password FROM Users WHERE email = %s"
         cursor.execute(query, (form.email.data,))
         result = cursor.fetchone()
 
         if result is not None:
-            stored_hashed_password = result[0]
+            user_id, stored_hashed_password = result
 
             # Check if the provided password matches the stored hashed password
             if pbkdf2_sha256.verify(form.password.data, stored_hashed_password):
+                # Set the user's session ID upon successful login
+                session['user_id'] = user_id
                 flash(f'Login successful, welcome {form.email.data}!', 'success')
                 return redirect(url_for('index'))
             else:
@@ -224,6 +227,13 @@ def appointment():
 
 @app.route('/create-appointment', methods=['POST'])
 def create_appointment():
+
+    user_id = session.get('user_id')
+    if user_id is None:
+        # Handle not logged in case
+        flash("You need to login to create appointments", "error")
+        return redirect(url_for('login'))
+    
     agent_name = request.form['agentName']
     date = request.form['date']
     time = request.form['time']
@@ -263,7 +273,7 @@ def create_appointment():
         cursor.execute("""
              INSERT INTO Appointments (ApptDateTime, CEANumber, UserID)
          VALUES (%s, (SELECT CEANumber FROM Agents WHERE userID = (SELECT userID FROM Users WHERE name = %s)), %s)
-     """, (appt_datetime, agent_name, 1))
+     """, (appt_datetime, agent_name, user_id))
         connection.commit()
     
     # Flash success message and redirect to the appointments view page
@@ -341,6 +351,7 @@ def delete_appointment():
             print(apptId)
             cursor.execute(query, apptId)
             connection.commit()
+            flash('Appointment deleted successfully.', 'success')
 
             # Return a JSON response indicating success
             response = {'status': 'success', 'message': 'Appointment deleted successfully'}
@@ -367,15 +378,17 @@ def view_appointments():
     cursor = connection.cursor()
 
     try:
-        # Construct the SQL query to retrieve the user's appointments (set userID to 1 temporarily for demonstration)
-        #query = "SELECT a.* FROM Appointments a, Users u WHERE a.UserID = 1"
+
+        user_id = session.get('user_id')
+        if user_id is None:
+            # Handle not logged in case
+            flash("You need to login to view appointments", "error")
+            return redirect(url_for('login'))
 
         # Displays all agents
-        query = "SELECT ap.ApptID, ap.ApptDateTime, u.name FROM Users u, Agents a, Appointments ap WHERE u.UserID = a.UserID AND a.CEANumber = ap.CEANumber AND ap.UserID = 1"
+        query = "SELECT ap.ApptID, ap.ApptDateTime, u.name FROM Users u, Agents a, Appointments ap WHERE u.UserID = a.UserID AND a.CEANumber = ap.CEANumber AND ap.UserID = %s"
+        cursor.execute(query, (user_id,))
 
-        #query = "SELECT u.name FROM Users u, Agents a, Appointments app WHERE a.UserID = 1 AND u.UserID = a.UserID AND a.CEANumber = app.CEANumber"
-        # query = "SELECT a.ApptID, a.ApptDateTime, u.name FROM Appointments a, Users u, Agents ag WHERE a.UserID = 1 AND a.CEANumber = ag.CEANumber AND"
-        cursor.execute(query)  # Set userID to 1 temporarily
         # Fetch all the user's appointments
         appointments = cursor.fetchall()
         
