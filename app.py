@@ -196,26 +196,38 @@ def appointment():
     connection = get_db()
     cursor = connection.cursor()
 
+    # Initialize variables for filters and search
+    filter_agency_name = None
+    filter_agent_title = None
+    search_query = None
+
     if request.method == 'POST':
+        # Handle filters
         filter_agency_name = request.form.get('filter_agency_name')
         filter_agent_title = request.form.get('filter_agent_title')
-
-        query = "SELECT DISTINCT u.name, a.agentTitle, a.CEANumber, ag.agencyName " \
-                "FROM Users u, Agency ag, Agents a " \
-                "WHERE u.userID = a.userID AND ag.agencyLicenseNo = a.agencyLicenseNo"
-
-        if filter_agency_name:
-            query += f" AND ag.agencyName = '{filter_agency_name}'"
-
-        if filter_agent_title:
-            query += f" AND a.agentTitle = '{filter_agent_title}'"
-
-        cursor.execute(query)
     else:
-        # If it's a GET request without filters, retrieve all agents
-        query = "SELECT DISTINCT u.name, a.agentTitle, a.CEANumber, ag.agencyName " \
-                "FROM Users u, Agency ag, Agents a " \
-                "WHERE u.userID = a.userID AND ag.agencyLicenseNo = a.agencyLicenseNo"
+        # Handle search
+        search_query = request.args.get('search_query', '').strip()
+
+    # Base query
+    query = "SELECT DISTINCT u.name, a.agentTitle, a.CEANumber, ag.agencyName " \
+            "FROM Users u, Agency ag, Agents a " \
+            "WHERE u.userID = a.userID AND ag.agencyLicenseNo = a.agencyLicenseNo"
+
+    # Apply filters
+    if filter_agency_name:
+        query += f" AND ag.agencyName = '{filter_agency_name}'"
+    if filter_agent_title:
+        query += f" AND a.agentTitle = '{filter_agent_title}'"
+
+    # Apply search
+    if search_query:
+        query += " AND (u.name LIKE %s OR a.agentTitle LIKE %s OR a.CEANumber LIKE %s)"
+        search_term = f'%{search_query}%'
+
+    if search_query:
+        cursor.execute(query, (search_term, search_term, search_term))
+    else:
         cursor.execute(query)
 
     result = cursor.fetchall()
@@ -228,6 +240,8 @@ def appointment():
     agent_titles = cursor.fetchall()
 
     return render_template("appointment.html", agents=result, agency_names=agency_names, agent_titles=agent_titles)
+
+
 
 
 @app.route('/create-appointment', methods=['POST'])
@@ -243,7 +257,6 @@ def create_appointment():
     date = request.form['date']
     time = request.form['time']
 
-    # Create a DB connection
     connection = get_db()
     cursor = connection.cursor()
     
@@ -303,7 +316,7 @@ def update_appointment():
         appt_id = request.form.get('apptId')
         date = request.form.get('date')
         time = request.form.get('time')
-        agent_name = request.form.get('agentName')  # Ensure this field is included in your form
+        agent_name = request.form.get('agentName') 
 
         # Combine date and time into a single datetime object
         appt_datetime = parse_datetime(date, time)
@@ -346,9 +359,8 @@ def delete_appointment():
     if request.method == 'POST':
         try:
             # Extract appointment data from the form
-            apptId = request.form.get('apptId')  # Adjust this based on your form field
+            apptId = request.form.get('apptId')
             
-            # Create a DB connection
             connection = get_db()
             cursor = connection.cursor()
 
@@ -377,30 +389,51 @@ def delete_appointment():
 
 @app.route('/view-appointments.html')
 def view_appointments():
+    if 'user_id' not in session or session.get('user_type') != 'normal_user':
+        flash("You need to be logged in as a homebuyer to view appointments.", "error")
+        return redirect(url_for('login'))
 
-    # Retrieve the user's bookings from the database
+    user_id = session['user_id']
     connection = get_db()
     cursor = connection.cursor()
 
+    search_query = request.args.get('search_query', '').strip()
+    appointment_filter = request.args.get('filter', 'upcoming')
+
     try:
+        base_query = """
+        SELECT ap.ApptID, ap.ApptDateTime, u.name, a.agentTitle, a.CEANumber
+        FROM Appointments ap
+        JOIN Users u ON ap.userID = u.userID
+        JOIN Agents a ON a.CEANumber = ap.CEANumber
+        WHERE ap.UserID = %s
+        """
 
-        if 'user_id' not in session or session.get('user_type') != 'normal_user':
-            flash("You need to be logged in as a homebuyer to view appointments.", "error")
-            return redirect(url_for('login'))
+        search_query_part = ""
+        if search_query:
+            search_query_part = " AND (u.name LIKE %s OR a.agentTitle LIKE %s OR a.CEANumber LIKE %s)"
+            search_term = f'%{search_query}%'
 
-        user_id = session['user_id']
+        filter_query = ""
+        if appointment_filter == 'past':
+            filter_query = " AND ap.ApptDateTime < NOW()"
+        elif appointment_filter == 'upcoming':
+            filter_query = " AND ap.ApptDateTime > NOW()"
 
-        # Displays all agents
-        query = "SELECT ap.ApptID, ap.ApptDateTime, u.name FROM Users u, Agents a, Appointments ap WHERE u.UserID = a.UserID AND a.CEANumber = ap.CEANumber AND ap.UserID = %s"
-        cursor.execute(query, (user_id,))
+        final_query = base_query + search_query_part + filter_query
+        final_query += " ORDER BY ap.ApptDateTime"
 
-        # Fetch all the user's appointments
+        if search_query:
+            cursor.execute(final_query, (user_id, search_term, search_term, search_term))
+        else:
+            cursor.execute(final_query, (user_id,))
+
         appointments = cursor.fetchall()
-        
+
         if not appointments:
             flash("You currently have no appointments.", "info")
 
-        return render_template("view-appointments.html", appointments=appointments)
+        return render_template("view-appointments.html", appointments=appointments, filter=appointment_filter)
 
     except pymysql.Error as e:
         flash(f"An error occurred while retrieving your appointments: {e}", "error")
@@ -411,29 +444,58 @@ def view_appointments():
     return render_template("view-appointments.html")
 
 
-@app.route('/agent/appointments')
+
+
+@app.route('/agent/appointments', methods=['GET'])
 def agent_appointments():
     if 'agent_id' not in session:
         flash("You need to log in as an agent to view appointments.", "error")
         return redirect(url_for('login'))
 
-    agent_id = session['agent_id']
+    agent_cea = session['CEANumber']
     connection = get_db()
     cursor = connection.cursor()
 
-    # Query to fetch upcoming appointments for the agent
-    query = """
-    SELECT a.ApptID, a.ApptDateTime, u.name, u.email, u.phone
-    FROM Appointments a
-    JOIN Users u ON a.UserID = u.UserID
-    WHERE a.CEANumber = %s AND a.ApptDateTime > NOW()
-    ORDER BY a.ApptDateTime
-    """
-    cursor.execute(query, (agent_id,))
-    appointments = cursor.fetchall()
-    cursor.close()
+    search_query = request.args.get('search_query', '').strip()
+    appointment_filter = request.args.get('filter', 'upcoming')
 
-    return render_template("agent-appointments.html", appointments=appointments)
+    try:
+        base_query = """
+        SELECT ap.ApptID, ap.ApptDateTime, u.name, u.email, u.phone 
+        FROM Appointments ap 
+        JOIN Users u ON ap.userID = u.userID 
+        WHERE ap.CEANumber = %s
+        """
+
+        filter_query = ""
+        if appointment_filter == 'past':
+            filter_query = " AND ap.ApptDateTime < NOW()"
+        elif appointment_filter == 'upcoming':
+            filter_query = " AND ap.ApptDateTime > NOW()"
+
+        search_query_part = ""
+        if search_query:
+            search_query_part = " AND (u.name LIKE %s OR u.email LIKE %s)"
+            search_term = f'%{search_query}%'
+
+        final_query = base_query + filter_query + search_query_part
+
+        if search_query:
+            cursor.execute(final_query, (agent_cea, search_term, search_term))
+        else:
+            cursor.execute(final_query, (agent_cea,))
+
+        appointments = cursor.fetchall()
+        return render_template("agent-appointments.html", appointments=appointments)
+
+    except pymysql.Error as e:
+        flash(f"An error occurred while retrieving appointments: {e}", "error")
+
+    finally:
+        cursor.close()
+
+    return render_template("agent-appointments.html")
+
 
 
 

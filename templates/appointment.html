@@ -59,7 +59,8 @@
         <div class="container-fluid header bg-white p-0">
             <div class="row g-0 align-items-center flex-column-reverse flex-md-row">
                 <div class="col-md-6 p-5 mt-lg-5">
-                    <h1 class="display-5 animated fadeIn mb-4">Make an Appointment</h1>
+                    <h1 class="display-5 animated fadeIn mb-1">Make an Appointment</h1>
+                    <h3 class="display-8 mb-4">with one of our agents</h3>
                     <!-- Add a "View All Bookings" button that links to the bookings page -->
                     <a href="/view-appointments.html" class="btn btn-primary">View All Bookings</a>
                 </div>
@@ -98,6 +99,13 @@
             </div>
         </div>
 
+        <div class="container mt-4">
+            <form method="GET" action="{{ url_for('appointment') }}" class="input-group">
+                <input type="search" class="form-control" placeholder="Search agents" aria-label="Search" name="search_query">
+                <button class="btn btn-outline-primary" type="submit">Search</button>
+            </form>
+        </div>
+        
 
         <div class="agents-table">
             <table class="table table-bordered table-striped table-hover">
@@ -121,7 +129,7 @@
                             <!-- Button to trigger modal -->
                             <button class="btn btn-primary make-appointment-btn" data-toggle="modal"
                                 data-target="#appointmentModal" data-agent-name="{{ agent[0] }}">
-                                Make an Appointment
+                                Book
                             </button>
                         </td>
                     </tr>

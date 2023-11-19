@@ -69,10 +69,26 @@
         <!-- Header End -->
 
         <div class="container bookings-table">
+            <div class="dropdown">
+
+                <form method="GET" action="{{ url_for('view_appointments') }}" style="width: 200px;">
+                    <select class="form-select" name="filter" onchange="this.form.submit()">
+                        <option value="upcoming" {% if request.args.get('filter') == 'upcoming' %}selected{% endif %}>Upcoming</option>
+                        <option value="past" {% if request.args.get('filter') == 'past' %}selected{% endif %}>Past</option>
+                    </select>
+                </form>
+            </div>
+
+            <div class="mt-4">
+                <form method="GET" action="{{ url_for('view_appointments') }}" class="input-group">
+                    <input type="search" class="form-control" placeholder="Search appointments" aria-label="Search" name="search_query">
+                    <button class="btn btn-outline-primary" type="submit">Search</button>
+                </form>
+            </div>
             {% if not appointments %}
             <p class="mt-lg-5 no-bookings">You currently have no bookings.</p>
             {% else %}
-            <table class="table table-bordered table-striped table-hover">
+            <table class="mt-5 table table-bordered table-striped table-hover">
                 <thead class="thead-dark">
                     <tr>
                         <th>Appointment ID</th>
