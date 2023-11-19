@@ -57,7 +57,7 @@
             </div>
             {% if 'user_type' in session %}
                 {% if session['user_type'] == 'agent' %}
-                    <a href="" class="btn btn-primary px-3 d-none d-lg-flex">Add Property</a>
+                    <a href="{{ url_for('add_listing') }}" class="btn btn-primary px-3 d-none d-lg-flex">Add Listing</a>
                 {% endif %}
             {% endif %}
         </div>

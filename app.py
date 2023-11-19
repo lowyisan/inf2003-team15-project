@@ -1,6 +1,6 @@
 import textwrap
 from flask import Flask, render_template, g, flash, redirect, url_for, request, jsonify, session
-from forms import RegistrationForm, LoginForm
+from forms import RegistrationForm, LoginForm, AddListingForm
 import pymysql
 from sshtunnel import SSHTunnelForwarder
 from passlib.hash import pbkdf2_sha256
@@ -160,6 +160,26 @@ def logout():
     flash('You have been successfully logged out.', 'info')
     return redirect(url_for('index'))
 
+@app.route('/add_listing.html', methods=['GET', 'POST'])
+def add_listing():
+
+    form = AddListingForm()
+
+    if form.validate_on_submit():
+        # Connect to your database
+        connection = get_db()
+        cursor = connection.cursor()
+
+        # Insert user into Users table
+        user_query = "INSERT INTO Listings (Type, Price) VALUES (%s, %s)"
+        user_values = (form.type.data, form.price.data)
+        cursor.execute(user_query, user_values)
+        connection.commit()
+
+        flash('Listing Successfully Added', 'success')
+        return redirect(url_for('index'))
+
+    return render_template("add_listing.html", form=form)
 
 
 @app.route('/about.html')

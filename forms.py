@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField, RadioField
-from wtforms.validators import DataRequired, Length, Email, EqualTo
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, RadioField, SelectField, DecimalField
+from wtforms.validators import DataRequired, Length, Email, EqualTo, NumberRange
 
 class RegistrationForm(FlaskForm):
     
@@ -41,3 +41,12 @@ class LoginForm(FlaskForm):
     remember = BooleanField('Remember Me')
 
     submit = SubmitField('Login')
+
+
+class AddListingForm(FlaskForm):
+    
+    type = SelectField('Flat Type', choices=[('3', '3 ROOM'), ('4', '4 ROOM'), ('5', '5 ROOM'), ('executive', 'EXECUTIVE')], validators=[DataRequired()])
+    
+    price = DecimalField('Price', validators=[DataRequired(), NumberRange(min=100.00)]) 
+    
+    submit = SubmitField('Post Listing')

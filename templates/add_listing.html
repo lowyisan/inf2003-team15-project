@@ -1,0 +1,92 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container mt-3">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}" role="alert">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
+<!DOCTYPE html>
+{% include "includes/head.html" %}
+<title>Add Listing</title>
+
+<body>
+    {% include "includes/navbar.html" %}
+
+    <!-- Header Start -->
+    <div class="container-fluid header bg-white p-0">
+        <div class="row g-0 align-items-center flex-column-reverse flex-md-row">
+            <div class="col-md-6 p-5 mt-lg-5">
+                <h1 class="display-5 animated fadeIn mb-4">Add Listing</h1> 
+                    <nav aria-label="breadcrumb animated fadeIn">
+                    <ol class="breadcrumb text-uppercase">
+                        <li class="breadcrumb-item"><a href="#">Home</a></li>
+                        <li class="breadcrumb-item"><a href="#">Pages</a></li>
+                        <li class="breadcrumb-item text-body active" aria-current="page">Registration</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="col-md-6 animated fadeIn">
+                <img class="img-fluid" src="../static/img/header.jpg" alt="">
+            </div>
+        </div>
+    </div>
+    <!-- Header End -->
+
+    {% include "includes/search.html" %}
+    
+    <!-- {% for user in data %}
+        <p>{{ user[2] }}</p>
+    {% endfor %} -->
+    
+    <div class="container">
+        <h1>Add Listing</h1>
+        <form method="POST" action="">
+            {{ form.hidden_tag() }}
+
+            <!-- Select Flat Type -->
+            <div class="mb-3 form-group">
+                {{ form.type.label() }}
+                {{ form.type(class="form-select") }}
+            </div>
+
+
+            <!-- Price Field -->
+            <div class="mb-3 form-group">
+                {{ form.price.label() }}
+
+                {% if form.price.errors %}
+                    {{ form.price(class="form-control is-invalid") }}
+                    <div class="is-invalid">
+                        {% for error in form.price.errors %}
+                            <span>{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {{ form.price(class="form-control") }}
+                {% endif %}
+            </div>
+    
+            <!-- Submit Button -->
+            <div class="modal-footer form-group">
+                {{ form.submit(class="btn btn-primary") }}
+            </div>
+        </form>
+
+        <!-- JavaScript to Toggle Agent Fields -->
+        <script>
+            function toggleAgentFields() {
+                var agentOption = document.querySelector('input[name="role"]:checked').value;
+                var agentFields = document.getElementById('agentFields');
+                agentFields.style.display = agentOption === 'agent' ? 'block' : 'none';
+            }
+        </script>
+
+    </div>
+
+    {% include "includes/footer.html" %}
+</body>
+</html>
