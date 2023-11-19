@@ -1,3 +1,14 @@
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container mt-3">
+    {% for category, message in messages %}
+    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }}" role="alert">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+
 <!DOCTYPE html>
 {% include "includes/head.html" %}
 <title>Registration</title>
@@ -158,7 +169,7 @@
                 agentFields.style.display = agentOption === 'agent' ? 'block' : 'none';
             }
         </script>
-        
+
         <p>
             Already Have An Account? <a href="{{ url_for('login') }}">Log in.</a>
         </p>
