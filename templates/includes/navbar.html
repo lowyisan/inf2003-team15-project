@@ -50,11 +50,16 @@
                 <!-- Conditionally display Log In or Sign Out -->
                 {% if 'user_id' not in session %}
                     <a href="{{ url_for('login') }}" class="nav-item nav-link">Log In</a>
+                    <a href="{{ url_for('register') }}" class="nav-item nav-link">Register</a>
                 {% else %}
                     <a href="{{ url_for('logout') }}" class="nav-item nav-link">Sign Out</a>
                 {% endif %}
             </div>
-            <a href="" class="btn btn-primary px-3 d-none d-lg-flex">Add Property</a>
+            {% if 'user_type' in session %}
+                {% if session['user_type'] == 'agent' %}
+                    <a href="" class="btn btn-primary px-3 d-none d-lg-flex">Add Property</a>
+                {% endif %}
+            {% endif %}
         </div>
     </nav>
 </div>
