@@ -52,6 +52,34 @@
                 {% endif %}
             </div>
 
+            <!-- Role Selection Field -->
+            <div class="mb-3 form-group">
+                {{ form.role.label() }}
+                {% for subfield in form.role %}
+                    <div class="form-check">
+                        {{ subfield(class="form-check-input", onchange="toggleAgentFields()") }}
+                        {{ subfield.label(class="form-check-label") }}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Agent-specific Fields (initially hidden) -->
+            <div id="agentFields" style="display: none;">
+                <div class="mb-3 form-group">
+                    {{ form.CEANumber.label() }}
+                    {{ form.CEANumber(class="form-control") }}
+                </div>
+                <div class="mb-3 form-group">
+                    {{ form.agencyLicenseNo.label() }}
+                    {{ form.agencyLicenseNo(class="form-control") }}
+                </div>
+                <div class="mb-3 form-group">
+                    {{ form.agentTitle.label() }}
+                    {{ form.agentTitle(class="form-control") }}
+                </div>
+            </div>
+
+
             <!-- Email Field -->
             <div class="mb-3 form-group">
                 {{ form.email.label() }}
@@ -121,6 +149,16 @@
                 {{ form.submit(class="btn btn-primary") }}
             </div>
         </form>
+
+        <!-- JavaScript to Toggle Agent Fields -->
+        <script>
+            function toggleAgentFields() {
+                var agentOption = document.querySelector('input[name="role"]:checked').value;
+                var agentFields = document.getElementById('agentFields');
+                agentFields.style.display = agentOption === 'agent' ? 'block' : 'none';
+            }
+        </script>
+        
         <p>
             Already Have An Account? <a href="{{ url_for('login') }}">Log in.</a>
         </p>

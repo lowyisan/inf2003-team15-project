@@ -56,10 +56,6 @@
             <div class="row g-0 align-items-center flex-column-reverse flex-md-row">
                 <div class="col-md-6 p-5 mt-lg-5">
                     <h1 class="display-5 animated fadeIn mb-4">Your Appointments</h1>
-                    <!-- Add a "View All Bookings" button that links to the bookings page -->
-                    <a href="/appointment.html" class="btn btn-primary">Make New Appointment</a>
-
-
                 </div>
                 <div class="col-md-6 animated fadeIn">
                     <img class="img-fluid" src="../static/img/header.jpg" alt="">
@@ -105,50 +101,7 @@
             {% endif %}
         </div>
 
-        <div class="modal fade modal-top" id="editAppointmentModal" tabindex="-1" role="dialog"
-            aria-labelledby="editAppointmentModalLabel" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <form id="editAppointmentForm" action="/update-appointment" method="POST">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="appointmentModalLabel">Edit an Appointment</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <form action="/update-appointment" method="POST">
-                                    <!-- Add this hidden input field inside your form -->
-                                    <input type="hidden" id="apptId" name="apptId">
-                                    <div class="mb-3 form-group">
-                                        <label for="agentName" class="form-label">Agent Name</label>
-                                        <input type="text" class="form-control" id="agentName" name="agentName"
-                                            readonly>
-                                    </div>
-                                    <div class="mb-3 form-group">
-                                        <label for="date" class="form-label">Date of Appointment</label>
-                                        <input type="date" class="form-control" id="apptDate" name="date" required>
-                                    </div>
-                                    <div class="mb-3 form-group">
-                                        <label for="time" class="form-label">Time of Appointment</label>
-                                        <input type="time" class="form-control" id="apptTime" name="time" required>
-                                    </div>
-                                    <!-- <div class="mb-3 form-group">
-                                            <label for="message" class="form-label">Message (Optional)</label>
-                                            <textarea class="form-control" id="apptMessage" rows="3" name="message"></textarea>
-                                        </div> -->
-                                    <div class="modal-footer form-group">
-                                        <button type="button" class="btn btn-secondary"
-                                            data-bs-dismiss="modal">Close</button>
-                                        <button type="submit" class="btn btn-primary">Edit Appointment</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
+
     </div>
 
     </div>

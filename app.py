@@ -79,62 +79,46 @@ def index():
     return render_template("index.html") 
     
 
-# Registraton Page
 @app.route('/register.html', methods=['GET', 'POST'])
 def register():
-    # Create a DB connection
-    # connection = get_db()
-    # cursor = connection.cursor()
-
-    # # Example query
-    # cursor.execute("SELECT * FROM Users")
-    # data = cursor.fetchall()
-
-    # # Close the cursor and the connection
-    # cursor.close()
-
     form = RegistrationForm()
 
     if form.validate_on_submit():
-        # Hash password
         hashed_password = pbkdf2_sha256.hash(form.password.data)
 
-        # Create a DB connection
+        # Connect to your database
         connection = get_db()
         cursor = connection.cursor()
 
-        # Prepared statement for inserting to Users table
-        query = "INSERT INTO Users (name, email, phone, password) VALUES (%s, %s, %s, %s)"
-        values = (form.username.data, form.email.data, form.phone.data, hashed_password)
+        # Insert user into Users table
+        user_query = "INSERT INTO Users (name, email, phone, password) VALUES (%s, %s, %s, %s)"
+        user_values = (form.username.data, form.email.data, form.phone.data, hashed_password)
+        cursor.execute(user_query, user_values)
+        user_id = cursor.lastrowid
+        connection.commit()
 
-        # Execute the prepared statement to insert user
-        try:
-            cursor.execute(query, values)
+        if form.role.data == 'agent':
+            # Insert additional agent details into Agents table
+            agent_query = "INSERT INTO Agents (CEANumber, agencyLicenseNo, agentTitle, userID) VALUES (%s, %s, %s, %s)"
+            agent_values = (form.CEANumber.data, form.agencyLicenseNo.data, form.agentTitle.data, user_id)
+            cursor.execute(agent_query, agent_values)
             connection.commit()
-            flash(f'Thank you for registering, {form.username.data}. <a href="{url_for("login")}">Login Here</a>', 'success')
 
-        except pymysql.Error as e:
-            connection.rollback()
-            flash(f'An error occurred while registering: {e}', 'error')
+        flash('Thank you for registering! You can now log in.', 'success')
+        return redirect(url_for('login'))
 
-        finally:
-            cursor.close()
-
-    return render_template("register.html", title='Registration', form=form)
-    # return render_template("register.html", data=data, title='Registration', form=form)
+    return render_template('register.html', form=form)
 
 
 @app.route('/login.html', methods=['GET', 'POST'])
 def login():
-    # Create login form
     form = LoginForm()
 
-    # Validate login form
     if form.validate_on_submit():
-        # Retrieve the user's hashed password from the database
         connection = get_db()
         cursor = connection.cursor()
 
+        # Query to check user credentials
         query = "SELECT userID, password FROM Users WHERE email = %s"
         cursor.execute(query, (form.email.data,))
         result = cursor.fetchone()
@@ -142,20 +126,41 @@ def login():
         if result is not None:
             user_id, stored_hashed_password = result
 
-            # Check if the provided password matches the stored hashed password
             if pbkdf2_sha256.verify(form.password.data, stored_hashed_password):
-                # Set the user's session ID upon successful login
+                # Check if the user is an agent
+                agent_query = "SELECT CEANumber FROM Agents WHERE userID = %s"
+                cursor.execute(agent_query, (user_id,))
+                agent_result = cursor.fetchone()
+
+                # Set user type in session
                 session['user_id'] = user_id
+                if agent_result is not None:
+                    session['user_type'] = 'agent'
+                    session['agent_id'] = user_id
+                    session['CEANumber'] = agent_result[0]
+                else:
+                    session['user_type'] = 'normal_user'
+
                 flash(f'Login successful, welcome {form.email.data}!', 'success')
                 return redirect(url_for('index'))
             else:
-                flash('Login failed. Invalid email or password.', 'error')
+                flash('Invalid email or password.', 'error')
         else:
-            flash('Login failed. Invalid email or password.', 'error')
+            flash('Invalid email or password.', 'error')
 
         cursor.close()
 
     return render_template("login.html", form=form)
+
+@app.route('/logout')
+def logout():
+    # Remove user_id and other user-related information from session
+    session.pop('user_id', None)
+    session.pop('user_type', None) 
+    flash('You have been successfully logged out.', 'info')
+    return redirect(url_for('index'))
+
+
 
 @app.route('/about.html')
 def about():
@@ -228,11 +233,11 @@ def appointment():
 @app.route('/create-appointment', methods=['POST'])
 def create_appointment():
 
-    user_id = session.get('user_id')
-    if user_id is None:
-        # Handle not logged in case
-        flash("You need to login to create appointments", "error")
+    if 'user_id' not in session or session.get('user_type') != 'normal_user':
+        flash("You need to be logged in as a homebuyer to view appointments.", "error")
         return redirect(url_for('login'))
+
+    user_id = session['user_id']
     
     agent_name = request.form['agentName']
     date = request.form['date']
@@ -379,11 +384,11 @@ def view_appointments():
 
     try:
 
-        user_id = session.get('user_id')
-        if user_id is None:
-            # Handle not logged in case
-            flash("You need to login to view appointments", "error")
+        if 'user_id' not in session or session.get('user_type') != 'normal_user':
+            flash("You need to be logged in as a homebuyer to view appointments.", "error")
             return redirect(url_for('login'))
+
+        user_id = session['user_id']
 
         # Displays all agents
         query = "SELECT ap.ApptID, ap.ApptDateTime, u.name FROM Users u, Agents a, Appointments ap WHERE u.UserID = a.UserID AND a.CEANumber = ap.CEANumber AND ap.UserID = %s"
@@ -406,6 +411,29 @@ def view_appointments():
     return render_template("view-appointments.html")
 
 
+@app.route('/agent/appointments')
+def agent_appointments():
+    if 'agent_id' not in session:
+        flash("You need to log in as an agent to view appointments.", "error")
+        return redirect(url_for('login'))
+
+    agent_id = session['agent_id']
+    connection = get_db()
+    cursor = connection.cursor()
+
+    # Query to fetch upcoming appointments for the agent
+    query = """
+    SELECT a.ApptID, a.ApptDateTime, u.name, u.email, u.phone
+    FROM Appointments a
+    JOIN Users u ON a.UserID = u.UserID
+    WHERE a.CEANumber = %s AND a.ApptDateTime > NOW()
+    ORDER BY a.ApptDateTime
+    """
+    cursor.execute(query, (agent_id,))
+    appointments = cursor.fetchall()
+    cursor.close()
+
+    return render_template("agent-appointments.html", appointments=appointments)
 
 
 

@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, RadioField
 from wtforms.validators import DataRequired, Length, Email, EqualTo
 
 class RegistrationForm(FlaskForm):
@@ -9,6 +9,14 @@ class RegistrationForm(FlaskForm):
     
     email = StringField('Email',
                         validators=[DataRequired(), Email()])
+    
+    role = RadioField('Role', choices=[('homebuyer', 'Homebuyer'), ('agent', 'Agent')], validators=[DataRequired()])
+
+
+    # Agent-specific fields
+    CEANumber = StringField('CEA Number')  
+    agencyLicenseNo = StringField('Agency License Number')  
+    agentTitle = StringField('Agent Title')  
     
     phone = StringField('Phone',
                         validators=[DataRequired()])
