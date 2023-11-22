@@ -198,16 +198,29 @@ def add_listing():
         connection = get_db()
         cursor = connection.cursor()
 
-        # Insert user into Users table
-        user_query = "INSERT INTO Listings (Type, Price) VALUES (%s, %s)"
-        user_values = (form.type.data, form.price.data)
-        cursor.execute(user_query, user_values)
+        # Insert listing details into Listings table
+        listing_query = """
+            INSERT INTO Listings (block, street_name, floorAreaSQM, town_estate, flat_type, price, listing_desc, CEANumber)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        listing_values = (
+            form.block.data,
+            form.street_name.data,
+            form.floorAreaSQM.data,
+            form.town_estate.data,
+            form.flat_type.data,
+            form.price.data,
+            form.listing_desc.data,
+            form.CEANumber.data
+        )
+        cursor.execute(listing_query, listing_values)
         connection.commit()
 
         flash("Listing Successfully Added", "success")
         return redirect(url_for("index"))
 
     return render_template("add_listing.html", form=form)
+
 
 
 @app.route("/about.html")

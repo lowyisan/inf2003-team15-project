@@ -46,21 +46,44 @@
         <h1>Add Listing</h1>
         <form method="POST" action="">
             {{ form.hidden_tag() }}
-
+        
+            <!-- Block Field -->
+            <div class="mb-3 form-group">
+                {{ form.block.label() }}
+                {{ form.block(class="form-control") }}
+            </div>
+        
+            <!-- Street Name Field -->
+            <div class="mb-3 form-group">
+                {{ form.street_name.label() }}
+                {{ form.street_name(class="form-control") }}
+            </div>
+        
+            <!-- Floor Area Field -->
+            <div class="mb-3 form-group">
+                {{ form.floorAreaSQM.label() }}
+                {{ form.floorAreaSQM(class="form-control") }}
+            </div>
+        
+            <!-- Town/Estate Field -->
+            <div class="mb-3 form-group">
+                {{ form.town_estate.label() }}
+                {{ form.town_estate(class="form-control") }}
+            </div>
+        
             <!-- Select Flat Type -->
             <div class="mb-3 form-group">
-                {{ form.type.label() }}
-                {{ form.type(class="form-select") }}
+                {{ form.flat_type.label() }}
+                {{ form.flat_type(class="form-select") }}
             </div>
-
-
+        
             <!-- Price Field -->
             <div class="mb-3 form-group">
                 {{ form.price.label() }}
-
+        
                 {% if form.price.errors %}
                     {{ form.price(class="form-control is-invalid") }}
-                    <div class="is-invalid">
+                    <div class="invalid-feedback">
                         {% for error in form.price.errors %}
                             <span>{{ error }}</span>
                         {% endfor %}
@@ -69,22 +92,24 @@
                     {{ form.price(class="form-control") }}
                 {% endif %}
             </div>
-    
+        
+            <!-- Listing Description Field -->
+            <div class="mb-3 form-group">
+                {{ form.listing_desc.label() }}
+                {{ form.listing_desc(class="form-control") }}
+            </div>
+        
+            <!-- Agent ID Field -->
+            <div class="mb-3 form-group">
+                {{ form.CEANumber.label() }}
+                {{ form.CEANumber(class="form-control") }}
+            </div>
+        
             <!-- Submit Button -->
             <div class="modal-footer form-group">
                 {{ form.submit(class="btn btn-primary") }}
             </div>
         </form>
-
-        <!-- JavaScript to Toggle Agent Fields -->
-        <script>
-            function toggleAgentFields() {
-                var agentOption = document.querySelector('input[name="role"]:checked').value;
-                var agentFields = document.getElementById('agentFields');
-                agentFields.style.display = agentOption === 'agent' ? 'block' : 'none';
-            }
-        </script>
-
     </div>
 
     {% include "includes/footer.html" %}
