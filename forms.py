@@ -50,7 +50,7 @@ class AddListingForm(FlaskForm):
     floorAreaSQM = StringField('Floor Area (SQM)', validators=[DataRequired()])
     town_estate = StringField('Town/Estate', validators=[DataRequired()])
     
-    flat_type = SelectField('Flat Type', choices=[('3', '3 ROOM'), ('4', '4 ROOM'), ('5', '5 ROOM'), ('executive', 'EXECUTIVE')], validators=[DataRequired()])
+    flat_type = SelectField('Flat Type', choices=[('3 ROOM', '3 ROOM'), ('4', '4 ROOM'), ('5 ROOM', '5 ROOM'), ('EXECUTIVE', 'EXECUTIVE')], validators=[DataRequired()])
     
     price = DecimalField('Price', validators=[DataRequired(), NumberRange(min=100.00)]) 
     

@@ -235,7 +235,20 @@ def contact():
 
 @app.route("/property-list.html")
 def propertylist():
-    return render_template("property-list.html")
+    # Connect to your database
+    connection = get_db()
+    cursor = connection.cursor()
+
+    # Fetch listings data from the database
+    cursor.execute("SELECT block, street_name, price, floorAreaSQM, flat_type FROM Listings")
+                        #    0      1           2           3           4           
+    listings = cursor.fetchall()
+    print("hello")
+    for listing in listings:
+        print(listing[0])
+
+    return render_template("property-list.html", listings=listings)
+
 
 
 @app.route("/property-agent.html")
