@@ -233,21 +233,65 @@ def contact():
     return render_template("contact.html")
 
 
-@app.route("/property-list.html")
+@app.route("/property-list.html", methods=["GET", "POST"])
 def propertylist():
-    # Connect to your database
+    # Connect to database and set cursor
     connection = get_db()
     cursor = connection.cursor()
 
-    # Fetch listings data from the database
-    cursor.execute("SELECT block, street_name, price, floorAreaSQM, flat_type FROM Listings")
-                        #    0      1           2           3           4           
+    # Fetch listings from the database
+    cursor.execute("SELECT block, street_name, price, floorAreaSQM, flat_type FROM Listings")                           
     listings = cursor.fetchall()
-    print("hello")
-    for listing in listings:
-        print(listing[0])
 
-    return render_template("property-list.html", listings=listings)
+    # Fetch distinct flat types for displaying form options
+    cursor.execute("SELECT DISTINCT flat_type FROM Listings")
+    flat_types = cursor.fetchall()
+
+    # Fetch distinct town estates for displaying location options
+    cursor.execute("SELECT DISTINCT town_estate FROM Listings")
+    locations = cursor.fetchall()
+
+    # Handling form submission for search and filter
+    if request.method == "POST":
+        search_keyword = request.form.get("search_keyword")
+        flat_type = request.form.get("flat_type")
+        location = request.form.get("location")
+
+        query = """
+            SELECT block, street_name, price, floorAreaSQM, flat_type 
+            FROM Listings 
+            WHERE 1=1
+        """
+        params = {}
+
+        conditions = []
+
+        if search_keyword:
+            conditions.append("(block LIKE %(search)s OR street_name LIKE %(search)s)")
+            params["search"] = f"%{search_keyword}%"
+
+        if flat_type != "Flat Type":
+            conditions.append("flat_type = %(flat_type)s")
+            params["flat_type"] = flat_type
+
+        if location != "Location":
+            conditions.append("town_estate = %(location)s")
+            params["location"] = location
+
+        if conditions:
+            query += " AND " + " AND ".join(conditions)
+
+        # Execute the filtered query with parameters
+        cursor.execute(query, params)
+        listings = cursor.fetchall()
+
+
+    return render_template(
+        "property-list.html",
+        listings=listings,
+        flat_types=flat_types,
+        locations=locations
+    )
 
 
 
