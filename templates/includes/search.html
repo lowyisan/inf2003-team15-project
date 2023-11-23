@@ -5,17 +5,19 @@
                 <div class="col-md-10">
                     <div class="row g-2">
                         <div class="col-md-4">
-                            <input type="text" class="form-control border-0 py-3" placeholder="Search Keyword" name="search_keyword">
+                            <input type="text" class="form-control border-0 py-3" placeholder="Search Keyword" name="search_keyword" value="{{ search_keyword if search_keyword != None else '' }}">
                         </div>
                         <div class="col-md-4">
+                            <!-- <h1>{{ selected_flat_type }}</h1> -->
                             <select class="form-select border-0 py-3" name="flat_type">
                                 <option selected>Flat Type</option>
                                 {% for flat_type in flat_types %}
-                                    <option value="{{ flat_type[0] }}">{{ flat_type[0] }}</option>
+                                <option value="{{ flat_type[0] }}">{{ flat_type[0] }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-4">
+                            <!-- <h1>{{ selected_location }}</h1> -->
                             <select class="form-select border-0 py-3" name="location">
                                 <option selected>Location</option>
                                 {% for location in locations %}

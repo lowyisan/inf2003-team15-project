@@ -251,11 +251,13 @@ def propertylist():
     cursor.execute("SELECT DISTINCT town_estate FROM Listings")
     locations = cursor.fetchall()
 
+    # Get search/filter inputs
+    search_keyword = request.form.get("search_keyword")
+    flat_type = request.form.get("flat_type")
+    location = request.form.get("location")
+
     # Handling form submission for search and filter
     if request.method == "POST":
-        search_keyword = request.form.get("search_keyword")
-        flat_type = request.form.get("flat_type")
-        location = request.form.get("location")
 
         query = """
             SELECT block, street_name, price, floorAreaSQM, flat_type 
@@ -290,7 +292,10 @@ def propertylist():
         "property-list.html",
         listings=listings,
         flat_types=flat_types,
-        locations=locations
+        locations=locations,
+        search_keyword=search_keyword,
+        selected_flat_type=flat_type,
+        selected_location=location,
     )
 
 
