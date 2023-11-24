@@ -895,15 +895,52 @@ def search_agents():
     print(f"Searching for: {query}")
     results = collection.find(
         {"agentName": {"$regex": query, "$options": "i"}},
-        {"agentName": 1, "reviews": 1, "_id": 0},
+        {"agentName": 1, "reviews": 1, "agencyLicenseNo": 1, "CEANumber": 1, "_id": 0},
     )
-    
+
     results_list = list(results)
     print(f"Found {len(results_list)} results")
     return jsonify(results_list)
+    
+@app.route("/add_review", methods=["POST"])
+def add_review():
+    agent_name = request.form.get("agentName")  # Use the 'name' attribute of the form inputs to access the data
+    review_content = request.form.get("review")
+    review_rating = request.form.get("rating")
 
-    return jsonify(list(results))
+    if agent_name and review_content and review_rating:
+        # Your logic to insert the review into MongoDB
+        db = client["agent_reviews"]
+        collection = db["agent_reviews"]
+        new_review = {
+            "content": review_content,
+            "rating": float(review_rating),  # Ensure rating is a float
+        }
+        collection.update_one(
+            {"agentName": agent_name}, {"$push": {"reviews": new_review}}
+        )
+        return jsonify({"message": "Review added successfully"}), 200
+    else:
+        return jsonify({"error": "Missing data"}), 400
 
+
+@app.route("/delete_review", methods=["DELETE"])
+def delete_review():
+    agent_name = request.args.get("agentName")
+    review_content = request.args.get("reviewContent")
+    review_rating = float(request.args.get("reviewRating"))
+
+    db = client["agent_reviews"]
+    collection = db["agent_reviews"]
+    result = collection.update_one(
+        {"agentName": agent_name},
+        {"$pull": {"reviews": {"content": review_content, "rating": review_rating}}}
+    )
+
+    if result.modified_count > 0:
+        return jsonify({"message": "Review deleted successfully"}), 200
+    else:
+        return jsonify({"error": "Review not found or deletion failed"}), 400
 
 if __name__ == "__main__":
     app.run(debug=True)
