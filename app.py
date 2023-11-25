@@ -214,7 +214,7 @@ def add_listing():
             form.flat_type.data,
             form.price.data,
             form.listing_desc.data,
-            form.CEANumber.data
+            form.CEANumber.data,
         )
         cursor.execute(listing_query, listing_values)
         connection.commit()
@@ -223,7 +223,6 @@ def add_listing():
         return redirect(url_for("index"))
 
     return render_template("add_listing.html", form=form)
-
 
 
 @app.route("/about.html")
@@ -243,7 +242,9 @@ def propertylist():
     cursor = connection.cursor()
 
     # Fetch listings from the database
-    cursor.execute("SELECT block, street_name, price, floorAreaSQM, flat_type FROM Listings")                           
+    cursor.execute(
+        "SELECT block, street_name, price, floorAreaSQM, flat_type FROM Listings"
+    )
     listings = cursor.fetchall()
 
     # Fetch distinct flat types for displaying form options
@@ -261,7 +262,6 @@ def propertylist():
 
     # Handling form submission for search and filter
     if request.method == "POST":
-
         query = """
             SELECT block, street_name, price, floorAreaSQM, flat_type 
             FROM Listings 
@@ -290,7 +290,6 @@ def propertylist():
         cursor.execute(query, params)
         listings = cursor.fetchall()
 
-
     return render_template(
         "property-list.html",
         listings=listings,
@@ -300,7 +299,6 @@ def propertylist():
         selected_flat_type=flat_type,
         selected_location=location,
     )
-
 
 
 @app.route("/property-agent.html")
@@ -888,6 +886,7 @@ db = client.test
 
 # app = Flask(__name__)
 
+
 @app.route("/search_agents", methods=["GET"])
 def search_agents():
     print("Connected to MongoDB")
@@ -906,11 +905,9 @@ def search_agents():
                 "agencyLicenseNo": 1,
                 "CEANumber": 1,
                 "_id": 0,
-                "averageRating": {
-                    "$avg": "$reviews.rating"
-                }
+                "averageRating": {"$avg": "$reviews.rating"},
             }
-        }
+        },
     ]
 
     results = collection.aggregate(pipeline)
@@ -919,9 +916,12 @@ def search_agents():
     print(f"Found {len(results_list)} results")
     return jsonify(results_list)
 
+
 @app.route("/add_review", methods=["POST"])
 def add_review():
-    agent_name = request.form.get("agentName")  # Use the 'name' attribute of the form inputs to access the data
+    agent_name = request.form.get(
+        "agentName"
+    )  # Use the 'name' attribute of the form inputs to access the data
     review_content = request.form.get("review")
     review_rating = request.form.get("rating")
 
@@ -940,6 +940,7 @@ def add_review():
     else:
         return jsonify({"error": "Missing data"}), 400
 
+
 @app.route("/delete_review", methods=["DELETE"])
 def delete_review():
     agent_name = request.args.get("agentName")
@@ -950,13 +951,41 @@ def delete_review():
     collection = db["agent_reviews"]
     result = collection.update_one(
         {"agentName": agent_name},
-        {"$pull": {"reviews": {"content": review_content, "rating": review_rating}}}
+        {"$pull": {"reviews": {"content": review_content, "rating": review_rating}}},
     )
 
     if result.modified_count > 0:
         return jsonify({"message": "Review deleted successfully"}), 200
     else:
         return jsonify({"error": "Review not found or deletion failed"}), 400
+
+@app.route("/update_review", methods=["POST"])
+def update_review():
+    agent_name = request.form.get("agentName")
+    updated_content = request.form.get("updatedReview")  # Use "updatedReview" as the name attribute in the form
+    updated_rating = float(request.form.get("rating"))
+
+    if agent_name and updated_content and updated_rating:
+        db = client["agent_reviews"]
+        collection = db["agent_reviews"]
+        
+        # Update the review with matching agent name and review content
+        result = collection.update_one(
+            {"agentName": agent_name, "reviews.content": request.form.get("review")},  # Use "review" as the name attribute in the form
+            {
+                "$set": {
+                    "reviews.$.content": updated_content,
+                    "reviews.$.rating": updated_rating,
+                }
+            }
+        )
+
+        if result.modified_count > 0:
+            return jsonify({"message": "Review updated successfully"}), 200
+        else:
+            return jsonify({"error": "Review not found or update failed"}), 400
+    else:
+        return jsonify({"error": "Missing data"}), 400
 
 if __name__ == "__main__":
     app.run(debug=True)

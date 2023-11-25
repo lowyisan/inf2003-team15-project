@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+// JavaScript code for displaying search results
 function displayResults(data) {
     const resultsContainer = document.querySelector('.results-container');
     resultsContainer.innerHTML = ''; // Clear previous results
@@ -29,6 +30,7 @@ function displayResults(data) {
                 <p>
                     <strong>Rating:</strong> ${review.rating} / 5<br>
                     ${review.content}
+                    <button onclick="showUpdateReviewForm('${agent.agentName}', '${review.content}')">Update</button>
                     <button onclick="deleteReview('${agent.agentName}', '${review.content}', ${review.rating})">Delete</button>
                 </p>`;
         });
@@ -71,14 +73,24 @@ function displayResults(data) {
     }
 }
 
+
 function deleteReview(agentName, reviewContent, reviewRating) {
     fetch(`/delete_review?agentName=${encodeURIComponent(agentName)}&reviewContent=${encodeURIComponent(reviewContent)}&reviewRating=${reviewRating}`, {
         method: 'DELETE'
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log(data.message);
-        // Refresh the displayed reviews or handle UI updates here
-    })
-    .catch(error => console.error('Error:', error));
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+            // Refresh the displayed reviews or handle UI updates here
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+function showUpdateReviewForm(agentName, reviewContent) {
+    // Fill in the agent name and review content in the update form
+    document.getElementById('update-agent-name').value = agentName;
+    document.getElementById('update-review-content').value = reviewContent;
+
+    // Display the update form
+    document.querySelector('#update-review-form').style.display = 'block';
 }

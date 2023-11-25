@@ -89,6 +89,25 @@
 
         <div class="results-container"></div>
 
+        <!-- Add an Update Review Form -->
+        <form id="update-review-form" action="/update_review" method="post" style="display: none;">
+            <input type="hidden" id="update-agent-name" name="agentName" value="">
+            <input type="hidden" id="update-review-content" name="review" value="">
+
+            <div class="mb-3">
+                <label for="update-review-rating">Updated Rating:</label>
+                <input type="number" id="update-review-rating" name="rating" class="form-control" min="1" max="5"
+                    placeholder="Rating (1-5)">
+            </div>
+            <div class="mb-3">
+                <label for="update-review-text">Updated Review:</label>
+                <textarea id="update-review-text" name="updatedReview" class="form-control" rows="4"
+                    placeholder="Write your updated review here"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Review</button>
+        </form>
+
+
         <form id="review-form" action="/add_review" method="post" style="display: none;">
             <input type="hidden" id="agent-name" name="agentName" value="">
 
