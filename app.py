@@ -78,24 +78,95 @@ def get_db():
     return g.db_connection
 
 
-# Before the first request, check the SSH tunnel
-# @app.before_request
-# def check_ssh_tunnel():
-#     if not ssh_server.is_active:
-#         print("SSH tunnel failed to establish.")
-#         # You could raise an exception here or handle it as appropriate
-#     else:
-#         print("SSH tunnel is active")
+# # Landing Page
+# @app.route("/")
+# def index():
+#     if ssh_server is None:
+#         flash(
+#             "SSH tunnel failed to establish. Error: Unable to connect to the SSH server."
+#         )
+#     return render_template("index.html")
 
 
-# Landing Page
-@app.route("/")
-def index():
-    if ssh_server is None:
-        flash(
-            "SSH tunnel failed to establish. Error: Unable to connect to the SSH server."
-        )
-    return render_template("index.html")
+@app.route("/", methods=["GET", "POST"])
+def propertylist():
+    # Connect to database and set cursor
+    connection = get_db()
+    cursor = connection.cursor()
+
+    # Fetch listings from the database
+    cursor.execute(
+        "SELECT listingID, block, street_name, price, floorAreaSQM, flat_type FROM Listings"
+    )
+    listings = cursor.fetchall()
+
+    # Fetch distinct flat types for displaying form options
+    cursor.execute("SELECT DISTINCT flat_type FROM Listings")
+    flat_types = cursor.fetchall()
+
+    # Fetch distinct town estates for displaying location options
+    cursor.execute("SELECT DISTINCT town_estate FROM Listings")
+    locations = cursor.fetchall()
+
+    # Get search/filter inputs
+    search_keyword = request.form.get("search_keyword")
+    flat_type = request.form.get("flat_type")
+    location = request.form.get("location")
+
+    # Handling form submission for search and filter
+    if request.method == "POST":
+        query = """
+            SELECT listingID, block, street_name, price, floorAreaSQM, flat_type 
+            FROM Listings 
+            WHERE 1=1
+        """
+        params = {}
+
+        conditions = []
+
+        if search_keyword:
+            conditions.append("(block LIKE %(search)s OR street_name LIKE %(search)s)")
+            params["search"] = f"%{search_keyword}%"
+
+        if flat_type != "Flat Type":
+            conditions.append("flat_type = %(flat_type)s")
+            params["flat_type"] = flat_type
+
+        if location != "Location":
+            conditions.append("town_estate = %(location)s")
+            params["location"] = location
+
+        if conditions:
+            query += " AND " + " AND ".join(conditions)
+
+        # Execute the filtered query with parameters
+        cursor.execute(query, params)
+        listings = cursor.fetchall()
+
+    return render_template(
+        "property-list.html",
+        listings=listings,
+        flat_types=flat_types,
+        locations=locations,
+        search_keyword=search_keyword,
+        selected_flat_type=flat_type,
+        selected_location=location,
+    )
+
+@app.route("/listing-details/<int:listing_id>")
+def listing_details(listing_id):
+   # Connect to database and set cursor
+    connection = get_db()
+    cursor = connection.cursor()
+
+    # Fetch listings from the database
+    cursor.execute(
+        "SELECT * FROM Listings WHERE listingID = %s", (listing_id)
+    )
+
+    listing_details = cursor.fetchone()
+    
+    return render_template("listing-details.html", listing=listing_details)
 
 
 @app.route("/register.html", methods=["GET", "POST"])
@@ -234,89 +305,6 @@ def about():
 @app.route("/contact.html")
 def contact():
     return render_template("contact.html")
-
-
-@app.route("/property-list.html", methods=["GET", "POST"])
-def propertylist():
-    # Connect to database and set cursor
-    connection = get_db()
-    cursor = connection.cursor()
-
-    # Fetch listings from the database
-    cursor.execute(
-        "SELECT listingID, block, street_name, price, floorAreaSQM, flat_type FROM Listings"
-    )
-    listings = cursor.fetchall()
-
-    # Fetch distinct flat types for displaying form options
-    cursor.execute("SELECT DISTINCT flat_type FROM Listings")
-    flat_types = cursor.fetchall()
-
-    # Fetch distinct town estates for displaying location options
-    cursor.execute("SELECT DISTINCT town_estate FROM Listings")
-    locations = cursor.fetchall()
-
-    # Get search/filter inputs
-    search_keyword = request.form.get("search_keyword")
-    flat_type = request.form.get("flat_type")
-    location = request.form.get("location")
-
-    # Handling form submission for search and filter
-    if request.method == "POST":
-        query = """
-            SELECT listingID, block, street_name, price, floorAreaSQM, flat_type 
-            FROM Listings 
-            WHERE 1=1
-        """
-        params = {}
-
-        conditions = []
-
-        if search_keyword:
-            conditions.append("(block LIKE %(search)s OR street_name LIKE %(search)s)")
-            params["search"] = f"%{search_keyword}%"
-
-        if flat_type != "Flat Type":
-            conditions.append("flat_type = %(flat_type)s")
-            params["flat_type"] = flat_type
-
-        if location != "Location":
-            conditions.append("town_estate = %(location)s")
-            params["location"] = location
-
-        if conditions:
-            query += " AND " + " AND ".join(conditions)
-
-        # Execute the filtered query with parameters
-        cursor.execute(query, params)
-        listings = cursor.fetchall()
-
-    return render_template(
-        "property-list.html",
-        listings=listings,
-        flat_types=flat_types,
-        locations=locations,
-        search_keyword=search_keyword,
-        selected_flat_type=flat_type,
-        selected_location=location,
-    )
-
-@app.route("/listing-details/<int:listing_id>")
-def listing_details(listing_id):
-   # Connect to database and set cursor
-    connection = get_db()
-    cursor = connection.cursor()
-
-    # Fetch listings from the database
-    cursor.execute(
-        "SELECT * FROM Listings WHERE listingID = %s", (listing_id)
-    )
-
-    listing_details = cursor.fetchone()
-    
-    return render_template("listing-details.html", listing=listing_details)
-
-
 
 
 @app.route("/property-agent.html")
