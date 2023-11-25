@@ -243,7 +243,7 @@ def propertylist():
 
     # Fetch listings from the database
     cursor.execute(
-        "SELECT block, street_name, price, floorAreaSQM, flat_type FROM Listings"
+        "SELECT listingID, block, street_name, price, floorAreaSQM, flat_type FROM Listings"
     )
     listings = cursor.fetchall()
 
@@ -263,7 +263,7 @@ def propertylist():
     # Handling form submission for search and filter
     if request.method == "POST":
         query = """
-            SELECT block, street_name, price, floorAreaSQM, flat_type 
+            SELECT listingID, block, street_name, price, floorAreaSQM, flat_type 
             FROM Listings 
             WHERE 1=1
         """
@@ -299,6 +299,23 @@ def propertylist():
         selected_flat_type=flat_type,
         selected_location=location,
     )
+
+@app.route("/listing-details/<int:listing_id>")
+def listing_details(listing_id):
+   # Connect to database and set cursor
+    connection = get_db()
+    cursor = connection.cursor()
+
+    # Fetch listings from the database
+    cursor.execute(
+        "SELECT * FROM Listings WHERE listingID = %s", (listing_id)
+    )
+
+    listing_details = cursor.fetchone()
+    
+    return render_template("listing-details.html", listing=listing_details)
+
+
 
 
 @app.route("/property-agent.html")
