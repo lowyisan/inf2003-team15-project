@@ -157,11 +157,40 @@ def propertylist():
         selected_location=location,
     )
 
-@app.route("/listing-details/<int:listing_id>")
+@app.route("/listing-details/<int:listing_id>", methods=["GET", "POST"])
 def listing_details(listing_id):
    # Connect to database and set cursor
     connection = get_db()
     cursor = connection.cursor()
+
+    # Retrieve reviews from MongoDB
+    db = client["agent_reviews"]
+    collection = db["agent_reviews"]
+
+    pipeline = [
+        {"$match": {"agentName": {"$regex": "LEE KING LING", "$options": "i"}}},
+        {
+            "$project": {
+                "agentName": 1,
+                "reviews": 1,
+                "agencyLicenseNo": 1,
+                "CEANumber": 1,
+                "_id": 0,
+                "averageRating": {"$avg": "$reviews.rating"},
+            }
+        },
+    ]
+
+    results = collection.aggregate(pipeline)
+
+    for result in results:
+        reviews = result['reviews']
+
+    for review in reviews:
+        print(review['content'])
+        print(review['rating'])
+        
+
 
     # Fetch listings
     cursor.execute(
@@ -202,6 +231,7 @@ def listing_details(listing_id):
                            cea_num=cea_num,
                            agent_title=agent_title,
                            agent_name=agent_name,
+                           reviews = reviews
                            )
 
 
