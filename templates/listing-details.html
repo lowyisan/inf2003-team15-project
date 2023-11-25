@@ -50,17 +50,18 @@
                         </div>   
                         
                         <p style="font-weight: bold;">Agent Reviews</p>
-                        {% for review in reviews %}
+                        {% if reviews|length > 0 %}
+                            {% for review in reviews %}
+                                <div style="border-radius: 20px; border: 2px solid black; background-color: white; padding: 10px;">
+                                    <p>{{ review['content'] }}</p>
+                                    <p>Rating: {{ review['rating'] }}</p>
+                                </div>
+                                <br/>
+                            {% endfor %}
+                        {% else %}
+                            <p>No Reviews</p>
+                        {% endif %}
 
-                        <div style="border-radius: 20px; border: 2px solid black; background-color: white; padding: 10px;">
-                            <p>{{ review['content'] }}</p>
-                            <p>Rating: {{ review['rating'] }}</p>
-                        </div>
-                        
-                        <br/>
-
-                        {% endfor %}
-                        <p></p>
                         
                     </div>
                 </div> 

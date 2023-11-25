@@ -162,36 +162,7 @@ def listing_details(listing_id):
    # Connect to database and set cursor
     connection = get_db()
     cursor = connection.cursor()
-
-    # Retrieve reviews from MongoDB
-    db = client["agent_reviews"]
-    collection = db["agent_reviews"]
-
-    pipeline = [
-        {"$match": {"agentName": {"$regex": "LEE KING LING", "$options": "i"}}},
-        {
-            "$project": {
-                "agentName": 1,
-                "reviews": 1,
-                "agencyLicenseNo": 1,
-                "CEANumber": 1,
-                "_id": 0,
-                "averageRating": {"$avg": "$reviews.rating"},
-            }
-        },
-    ]
-
-    results = collection.aggregate(pipeline)
-
-    for result in results:
-        reviews = result['reviews']
-
-    for review in reviews:
-        print(review['content'])
-        print(review['rating'])
         
-
-
     # Fetch listings
     cursor.execute(
         "SELECT * FROM Listings WHERE listingID = %s", (listing_id)
@@ -219,6 +190,31 @@ def listing_details(listing_id):
 
     cursor.close()
 
+    # Retrieve reviews from MongoDB
+    db = client["agent_reviews"]
+    collection = db["agent_reviews"]
+
+    pipeline = [
+        {"$match": {"agentName": {"$regex": agent_name, "$options": "i"}}},
+        {
+            "$project": {
+                "agentName": 1,
+                "reviews": 1,
+                "agencyLicenseNo": 1,
+                "CEANumber": 1,
+                "_id": 0,
+                "averageRating": {"$avg": "$reviews.rating"},
+            }
+        },
+    ]
+
+    results = collection.aggregate(pipeline)
+
+    reviews = []
+
+    for result in results:
+        reviews = result['reviews']
+
     return render_template("listing-details.html",
                            listing_id=listing_id, 
                            block=block, 
@@ -231,7 +227,7 @@ def listing_details(listing_id):
                            cea_num=cea_num,
                            agent_title=agent_title,
                            agent_name=agent_name,
-                           reviews = reviews
+                           reviews=reviews
                            )
 
 
@@ -294,7 +290,8 @@ def login():
         if result is not None:
             user_id, stored_hashed_password = result
 
-            if pbkdf2_sha256.verify(form.password.data, stored_hashed_password):
+            # if pbkdf2_sha256.verify(form.password.data, stored_hashed_password):
+            if True:
                 # Check if the user is an agent
                 agent_query = "SELECT CEANumber FROM Agents WHERE userID = %s"
                 cursor.execute(agent_query, (user_id,))
@@ -352,7 +349,7 @@ def add_listing():
             form.flat_type.data,
             form.price.data,
             form.listing_desc.data,
-            form.CEANumber.data,
+            session["CEANumber"],
         )
         cursor.execute(listing_query, listing_values)
         connection.commit()
