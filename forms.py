@@ -56,6 +56,4 @@ class AddListingForm(FlaskForm):
     
     listing_desc = StringField('Listing Description')
     
-    CEANumber = StringField('Agent ID', validators=[DataRequired()])
-    
     submit = SubmitField('Post Listing')
