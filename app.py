@@ -9,10 +9,11 @@ from flask import (
     request,
     jsonify,
     session,
+    
 )
 
 from flask import Flask, request, jsonify
-import pymongo
+import pymongo, re
 from forms import RegistrationForm, LoginForm, AddListingForm
 import pymysql
 from sshtunnel import SSHTunnelForwarder
@@ -340,60 +341,76 @@ def error404():
 
 @app.route("/appointment.html", methods=["GET", "POST"])
 def appointment():
+    # Initialize MongoDB connection
+    client = pymongo.MongoClient(uri)
+    db = client["agent_reviews"]
+    collection = db["agent_reviews"]
+
+    # Initialize MySQL connection
     connection = get_db()
     cursor = connection.cursor()
 
-    # Initialize variables for filters and search
-    filter_agency_name = None
-    filter_agent_title = None
-    search_query = None
-
-    if request.method == "POST":
-        # Handle filters
-        filter_agency_name = request.form.get("filter_agency_name")
-        filter_agent_title = request.form.get("filter_agent_title")
-    else:
-        # Handle search
-        search_query = request.args.get("search_query", "").strip()
-
-    # Base query
-    query = (
-        "SELECT DISTINCT u.name, a.agentTitle, a.CEANumber, ag.agencyName "
-        "FROM Users u, Agency ag, Agents a "
-        "WHERE u.userID = a.userID AND ag.agencyLicenseNo = a.agencyLicenseNo"
-    )
-
-    # Apply filters
-    if filter_agency_name:
-        query += f" AND ag.agencyName = '{filter_agency_name}'"
-    if filter_agent_title:
-        query += f" AND a.agentTitle = '{filter_agent_title}'"
-
-    # Apply search
-    if search_query:
-        query += " AND (u.name LIKE %s OR a.agentTitle LIKE %s OR a.CEANumber LIKE %s)"
-        search_term = f"%{search_query}%"
-
-    if search_query:
-        cursor.execute(query, (search_term, search_term, search_term))
-    else:
-        cursor.execute(query)
-
-    result = cursor.fetchall()
-
-    # Retrieve available agency names and agent titles for populating the filter dropdowns
+    # Retrieve available agency names and agent titles for dropdowns
     cursor.execute("SELECT DISTINCT agencyName FROM Agency")
     agency_names = cursor.fetchall()
-
     cursor.execute("SELECT DISTINCT agentTitle FROM Agents")
     agent_titles = cursor.fetchall()
 
-    return render_template(
-        "appointment.html",
-        agents=result,
-        agency_names=agency_names,
-        agent_titles=agent_titles,
-    )
+    # Handle filters and search query from the form
+    filter_agency_name = request.form.get("filter_agency_name")
+    filter_agent_title = request.form.get("filter_agent_title")
+    review_filter = request.form.get("review_filter")
+    search_query = request.args.get("search_query", "").strip()
+    print()
+
+    # Base query for MySQL
+    base_query = "SELECT u.name, a.agentTitle, a.CEANumber, ag.agencyName FROM Users u JOIN Agents a ON u.userID = a.userID JOIN Agency ag ON a.agencyLicenseNo = ag.agencyLicenseNo"
+
+    # Apply filters
+    conditions = []
+    params = []
+    if filter_agency_name:
+        conditions.append("ag.agencyName = %s")
+        params.append(filter_agency_name)
+    if filter_agent_title:
+        conditions.append("a.agentTitle = %s")
+        params.append(filter_agent_title)
+    if search_query:
+        conditions.append("u.name LIKE %s")
+        params.append(f"%{search_query}%")
+
+    # Adding WHERE clause if there are filter conditions
+    if conditions:
+        base_query += " WHERE " + " AND ".join(conditions)
+
+    cursor.execute(base_query, params)
+    agents = cursor.fetchall()
+
+    # Combine MySQL and MongoDB data
+    combined_agents = []
+    for agent in agents:
+        agent_name = agent[0]  # The agent's name
+        safe_agent_name = re.escape(agent_name.strip())
+
+        # Fetch the average rating from MongoDB
+        avg_rating_pipeline = [
+            {"$match": {"agentName": {"$regex": f"^{safe_agent_name}$", "$options": "i"}}},
+            {"$unwind": "$reviews"},
+            {"$group": {"_id": None, "averageRating": {"$avg": "$reviews.rating"}}}
+        ]
+
+        avg_rating_result = list(collection.aggregate(avg_rating_pipeline))
+        avg_rating = avg_rating_result[0]["averageRating"] if avg_rating_result else None
+
+        # Filter based on review rating, if specified
+        if review_filter and (avg_rating is None or avg_rating < float(review_filter)):
+            continue  # Skip this agent if average rating is below the filter threshold
+
+        # Append agent details with average rating
+        combined_agents.append((*agent, avg_rating))
+
+    return render_template("appointment.html", agents=combined_agents, agency_names=agency_names, agent_titles=agent_titles)
+
 
 
 @app.route("/create-appointment", methods=["POST"])
@@ -583,8 +600,8 @@ def view_appointments():
         base_query = """
         SELECT ap.ApptID, ap.ApptDateTime, u.name, a.agentTitle, a.CEANumber
         FROM Appointments ap
-        JOIN Users u ON ap.userID = u.userID
         JOIN Agents a ON a.CEANumber = ap.CEANumber
+        JOIN Users u ON a.userID = u.userID
         WHERE ap.UserID = %s
         """
 
@@ -612,6 +629,7 @@ def view_appointments():
             cursor.execute(final_query, (user_id,))
 
         appointments = cursor.fetchall()
+        print(appointments)
 
         if not appointments:
             flash("You currently have no appointments.", "info")

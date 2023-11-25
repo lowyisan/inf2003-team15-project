@@ -92,6 +92,14 @@
                             <option value="{{ title[0] }}">{{ title[0]}}</option>
                             {% endfor %}
                         </select>
+                        <label for="reviewFilter">Review:</label>
+                        <select id="reviewFilter" name="review_filter">
+                            <option value="">All Ratings</option>
+                            <option value="4">4 stars and above</option>
+                            <option value="3">3 stars and above</option>
+                            <option value="2">2 stars and above</option>
+                            <!-- Add more options as required -->
+                        </select>
 
                         <input class="btn btn-primary px-3 d-none d-lg-flex mt-3" type="submit" value="Apply Filter">
                     </form>
@@ -115,6 +123,7 @@
                         <th>Agent Title</th>
                         <th>CEANumber</th>
                         <th>Agency Name</th>
+                        <th>Average Rating</th> <!-- New column for average rating -->
                         <th>Appointment</th>
                     </tr>
                 </thead>
@@ -125,6 +134,7 @@
                         <td>{{ agent[1] }}</td>
                         <td>{{ agent[2] }}</td>
                         <td>{{ agent[3] }}</td>
+                        <td>{{ agent[4] if agent[4] else 'No Rating' }}</td>
                         <td>
                             <!-- Button to trigger modal -->
                             <button class="btn btn-primary make-appointment-btn" data-toggle="modal"
