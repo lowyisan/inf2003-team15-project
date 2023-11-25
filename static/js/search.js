@@ -1,5 +1,3 @@
-var currentAgent = null;
-
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelector('#btn-search').addEventListener('click', function () {
         var searchText = document.querySelector('#input-search').value;
@@ -17,8 +15,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-
-
 function displayResults(data) {
     const resultsContainer = document.querySelector('.results-container');
     resultsContainer.innerHTML = ''; // Clear previous results
@@ -27,11 +23,6 @@ function displayResults(data) {
         let reviewsContent = '';
         resultsContainer.appendChild(agentElement);
         currentAgent = agent.agentName; // Update the currentAgent variable
-
-        // Iterate over each review and format it
-        // agent.reviews.forEach(review => {
-        //     reviewsContent += `<p><strong>Rating:</strong> ${review.rating} / 5<br>${review.content}</p>`;
-        // });
 
         agent.reviews.forEach((review, index) => {
             reviewsContent += `
@@ -42,7 +33,7 @@ function displayResults(data) {
                 </p>`;
         });
 
-        // Include CEANumber and agencyLicenseNo outside the reviews loop
+        // Include CEANumber, agencyLicenseNo, and averageRating outside the reviews loop
         agentElement.innerHTML =
             `<div class="container-xxl py-5">
             <div class="container">
@@ -50,6 +41,7 @@ function displayResults(data) {
                     <h1 class="mb-3">${agent.agentName}</h1>
                     <p><strong>CEANumber:</strong> ${agent.CEANumber}</p>
                     <p><strong>Agency License No:</strong> ${agent.agencyLicenseNo}</p>
+                    <p><strong>Average Rating:</strong> ${agent.averageRating.toFixed(2)}</p>
                     <p>${reviewsContent}</p>
                 </div>
             </div>
@@ -62,6 +54,20 @@ function displayResults(data) {
 
         // Change the display style of the review form to make it visible
         document.querySelector('#review-form').style.display = 'block';
+    }
+
+    // Display the average rating section if there are results with average ratings
+    const averageRatingSection = document.getElementById('average-rating-section');
+    const averageRatingParagraph = document.getElementById('average-rating');
+    const hasAverageRatings = data.some(agent => agent.averageRating !== null);
+
+    if (hasAverageRatings) {
+        const averageRatings = data.map(agent => agent.averageRating).filter(avg => avg !== null);
+        const totalAverageRating = averageRatings.reduce((sum, avg) => sum + avg, 0) / averageRatings.length;
+        averageRatingParagraph.textContent = `Average Rating: ${totalAverageRating.toFixed(2)}`;
+        averageRatingSection.style.display = 'block';
+    } else {
+        averageRatingSection.style.display = 'none';
     }
 }
 

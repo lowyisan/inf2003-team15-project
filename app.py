@@ -10,6 +10,9 @@ from flask import (
     jsonify,
     session,
 )
+
+from flask import Flask, request, jsonify
+import pymongo
 from forms import RegistrationForm, LoginForm, AddListingForm
 import pymysql
 from sshtunnel import SSHTunnelForwarder
@@ -869,21 +872,21 @@ def close_db_connection(exception):
         db_connection.close()
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# if __name__ == "__main__":
+#     app.run(debug=True)
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------
 # MongoDB
 # ------------------------------------------------------------------------------------------------------------------------------------
 # MongoDB
-from flask import Flask, request, jsonify
-import pymongo
+
 
 uri = "mongodb+srv://Team15Database:coldplay@dbproject.9wftjq5.mongodb.net/"
 client = pymongo.MongoClient(uri)
 db = client.test
 
+# app = Flask(__name__)
 
 @app.route("/search_agents", methods=["GET"])
 def search_agents():
@@ -893,15 +896,29 @@ def search_agents():
     db = client["agent_reviews"]
     collection = db["agent_reviews"]
     print(f"Searching for: {query}")
-    results = collection.find(
-        {"agentName": {"$regex": query, "$options": "i"}},
-        {"agentName": 1, "reviews": 1, "agencyLicenseNo": 1, "CEANumber": 1, "_id": 0},
-    )
+
+    pipeline = [
+        {"$match": {"agentName": {"$regex": query, "$options": "i"}}},
+        {
+            "$project": {
+                "agentName": 1,
+                "reviews": 1,
+                "agencyLicenseNo": 1,
+                "CEANumber": 1,
+                "_id": 0,
+                "averageRating": {
+                    "$avg": "$reviews.rating"
+                }
+            }
+        }
+    ]
+
+    results = collection.aggregate(pipeline)
 
     results_list = list(results)
     print(f"Found {len(results_list)} results")
     return jsonify(results_list)
-    
+
 @app.route("/add_review", methods=["POST"])
 def add_review():
     agent_name = request.form.get("agentName")  # Use the 'name' attribute of the form inputs to access the data
@@ -922,7 +939,6 @@ def add_review():
         return jsonify({"message": "Review added successfully"}), 200
     else:
         return jsonify({"error": "Missing data"}), 400
-
 
 @app.route("/delete_review", methods=["DELETE"])
 def delete_review():
