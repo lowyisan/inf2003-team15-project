@@ -164,9 +164,39 @@ def listing_details(listing_id):
         "SELECT * FROM Listings WHERE listingID = %s", (listing_id)
     )
 
-    listing_details = cursor.fetchone()
+    listing = cursor.fetchone()
+
+    if listing:
+        listing_id, block, street_name, floor_area_sqm, town_estate, flat_type, price, desc, cea_num = listing
+
+     # Fetch agent's title and name based on the CEA number by joining Agents and Users tables
+    cursor.execute("""
+        SELECT Agents.agentTitle, Users.name 
+        FROM Agents 
+        JOIN Users ON Agents.userID = Users.userID 
+        WHERE Agents.CEANumber = %s
+    """, (cea_num,))
     
-    return render_template("listing-details.html", listing=listing_details)
+    agent_info = cursor.fetchone()  # Fetch agent's title and name
+
+    if agent_info:
+        agent_title, agent_name = agent_info  # Extract agent's title and name
+    else:
+        agent_title, agent_name = None, None  # Set to none if agent not found
+
+    return render_template("listing-details.html",
+                           listing_id=listing_id, 
+                           block=block, 
+                           street_name=street_name, 
+                           floor_area_sqm=floor_area_sqm, 
+                           town_estate=town_estate, 
+                           flat_type=flat_type, 
+                           price=price, 
+                           desc=desc,
+                           cea_num=cea_num,
+                           agent_title=agent_title,
+                           agent_name=agent_name,
+                           )
 
 
 @app.route("/register.html", methods=["GET", "POST"])
