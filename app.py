@@ -108,6 +108,8 @@ def propertylist():
     cursor.execute("SELECT DISTINCT town_estate FROM Listings")
     locations = cursor.fetchall()
 
+    cursor.close()
+
     # Get search/filter inputs
     search_keyword = request.form.get("search_keyword")
     flat_type = request.form.get("flat_type")
@@ -143,6 +145,8 @@ def propertylist():
         cursor.execute(query, params)
         listings = cursor.fetchall()
 
+        cursor.close()   
+
     return render_template(
         "property-list.html",
         listings=listings,
@@ -159,7 +163,7 @@ def listing_details(listing_id):
     connection = get_db()
     cursor = connection.cursor()
 
-    # Fetch listings from the database
+    # Fetch listings
     cursor.execute(
         "SELECT * FROM Listings WHERE listingID = %s", (listing_id)
     )
@@ -183,6 +187,8 @@ def listing_details(listing_id):
         agent_title, agent_name = agent_info  # Extract agent's title and name
     else:
         agent_title, agent_name = None, None  # Set to none if agent not found
+
+    cursor.close()
 
     return render_template("listing-details.html",
                            listing_id=listing_id, 
@@ -274,7 +280,7 @@ def login():
                     session["user_type"] = "normal_user"
 
                 flash(f"Login successful, welcome {form.email.data}!", "success")
-                return redirect(url_for("index"))
+                return redirect(url_for("propertylist"))
             else:
                 flash("Invalid email or password.", "error")
         else:
@@ -291,7 +297,7 @@ def logout():
     session.pop("user_id", None)
     session.pop("user_type", None)
     flash("You have been successfully logged out.", "info")
-    return redirect(url_for("index"))
+    return redirect(url_for("login"))
 
 
 @app.route("/add_listing.html", methods=["GET", "POST"])
@@ -320,9 +326,10 @@ def add_listing():
         )
         cursor.execute(listing_query, listing_values)
         connection.commit()
+        cursor.close()
 
         flash("Listing Successfully Added", "success")
-        return redirect(url_for("index"))
+        return redirect(url_for("propertylist"))
 
     return render_template("add_listing.html", form=form)
 
