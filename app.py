@@ -88,6 +88,53 @@ def get_db():
 #     return render_template("index.html")
 
 
+@app.route("/toggle_favorites/<int:listing_id>", methods=["POST"])
+def toggle_favorites(listing_id):
+    # Connect to database and set cursor
+    connection = get_db()
+    cursor = connection.cursor()
+
+    user_id = session["user_id"]
+
+    if user_id is None:
+        # Handle the case when user is not logged in
+        return jsonify({"success": False, "message": "User not logged in"})
+
+    # Check if the listing is already a favorite for the user
+    cursor.execute("SELECT * FROM Favorites WHERE user_id = %s AND listing_id = %s", (user_id, listing_id))
+    existing_favorite = cursor.fetchone()
+
+    if existing_favorite:
+        # Listing is already a favorite, handle accordingly
+        return jsonify({"success": False, "message": "Listing is already in favorites"})
+    
+    # Add the listing to favorites
+    cursor.execute("INSERT INTO Favorites (user_id, listing_id) VALUES (%s, %s)", (user_id, listing_id))
+    connection.commit()
+
+    return jsonify({"success": True, "is_favorite": True})
+
+@app.route("/favorites", methods=["GET"])
+def favorites():
+    # Connect to database and set cursor
+    connection = get_db()
+    cursor = connection.cursor()
+
+    user_id = session.get("user_id")
+
+    # Fetch the favorites for the current user directly from the Favorites table
+    favorites_query = """
+    SELECT *
+    FROM Favorites
+    WHERE user_id = %s
+    """
+    cursor.execute(favorites_query, (user_id,))
+    favorites = cursor.fetchall()
+
+    cursor.close()
+
+    return jsonify({"status": "success", "favorites": favorites})
+
 @app.route("/", methods=["GET", "POST"])
 def propertylist():
     # Connect to database and set cursor
