@@ -155,7 +155,17 @@ def propertylist():
     cursor.execute("SELECT DISTINCT town_estate FROM Listings")
     locations = cursor.fetchall()
 
-    cursor.close()
+    # Fetch the favorites for the current user directly from the Favorites table
+    user_id = session.get("user_id")
+    favorites_query = """
+    SELECT L.listingID, L.block, L.street_name, L.price, L.floorAreaSQM, L.flat_type
+    FROM Listings L
+    JOIN Favorites F ON L.listingID = F.listing_id
+    WHERE F.user_id = %s
+    """
+    
+    cursor.execute(favorites_query, (user_id,))
+    favorites = cursor.fetchall()
 
     # Get search/filter inputs
     search_keyword = request.form.get("search_keyword")
@@ -192,7 +202,7 @@ def propertylist():
         cursor.execute(query, params)
         listings = cursor.fetchall()
 
-        cursor.close()   
+    cursor.close()   
 
     return render_template(
         "property-list.html",
@@ -202,6 +212,7 @@ def propertylist():
         search_keyword=search_keyword,
         selected_flat_type=flat_type,
         selected_location=location,
+        favorites=favorites
     )
 
 @app.route("/listing-details/<int:listing_id>", methods=["GET", "POST"])
