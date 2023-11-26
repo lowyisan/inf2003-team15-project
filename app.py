@@ -727,13 +727,16 @@ def view_appointments():
         return redirect(url_for("login"))
 
     user_id = session["user_id"]
-    connection = get_db()
-    cursor = connection.cursor()
-
-    search_query = request.args.get("search_query", "").strip()
-    appointment_filter = request.args.get("filter", "upcoming")
+    
 
     try:
+
+        connection = get_db()
+        cursor = connection.cursor()
+
+        search_query = request.args.get("search_query", "").strip()
+        appointment_filter = request.args.get("filter", "upcoming")
+
         base_query = """
         SELECT ap.ApptID, ap.ApptDateTime, u.name, a.agentTitle, a.CEANumber
         FROM Appointments ap
@@ -781,7 +784,8 @@ def view_appointments():
         flash(f"An error occurred while retrieving your appointments: {e}", "error")
 
     finally:
-        cursor.close()
+        if cursor:
+            cursor.close()
 
     return render_template("view-appointments.html")
 
