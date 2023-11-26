@@ -211,11 +211,9 @@ def propertylist():
     return render_template(
         "property-list.html",
         listings=listings,
-        flat_types=flat_types,
+        flat_types=sorted(flat_types),
         locations=locations,
         search_keyword=search_keyword,
-        selected_flat_type=flat_type,
-        selected_location=location,
         favorites=favorites
     )
 
