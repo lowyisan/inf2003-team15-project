@@ -78,16 +78,6 @@ def get_db():
     return g.db_connection
 
 
-# # Landing Page
-# @app.route("/")
-# def index():
-#     if ssh_server is None:
-#         flash(
-#             "SSH tunnel failed to establish. Error: Unable to connect to the SSH server."
-#         )
-#     return render_template("index.html")
-
-
 @app.route("/toggle_favorites/<int:listing_id>", methods=["POST"])
 def toggle_favorites(listing_id):
     # Connect to database and set cursor
@@ -453,11 +443,6 @@ def propertytype():
 @app.route("/analysis.html")
 def analysis():
     return render_template("analysis.html")
-
-
-@app.route("/404.html")
-def error404():
-    return render_template("404.html")
 
 
 @app.route("/appointment.html", methods=["GET", "POST"])
