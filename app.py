@@ -141,10 +141,13 @@ def propertylist():
     connection = get_db()
     cursor = connection.cursor()
 
+    listings_query = """
+                     SELECT listingID, block, street_name, price, floorAreaSQM, flat_type 
+                     FROM Listings
+    """
+
     # Fetch listings from the database
-    cursor.execute(
-        "SELECT listingID, block, street_name, price, floorAreaSQM, flat_type FROM Listings"
-    )
+    cursor.execute(listings_query)
     listings = cursor.fetchall()
 
     # Fetch distinct flat types for displaying form options
@@ -157,11 +160,12 @@ def propertylist():
 
     # Fetch the favorites for the current user directly from the Favorites table
     user_id = session.get("user_id")
+
     favorites_query = """
-    SELECT L.listingID, L.block, L.street_name, L.price, L.floorAreaSQM, L.flat_type
-    FROM Listings L
-    JOIN Favorites F ON L.listingID = F.listing_id
-    WHERE F.user_id = %s
+                      SELECT L.listingID, L.block, L.street_name, L.price, L.floorAreaSQM, L.flat_type
+                      FROM Listings L
+                      JOIN Favorites F ON L.listingID = F.listing_id
+                      WHERE F.user_id = %s
     """
     
     cursor.execute(favorites_query, (user_id,))
@@ -175,9 +179,9 @@ def propertylist():
     # Handling form submission for search and filter
     if request.method == "POST":
         query = """
-            SELECT listingID, block, street_name, price, floorAreaSQM, flat_type 
-            FROM Listings 
-            WHERE 1=1
+                SELECT listingID, block, street_name, price, floorAreaSQM, flat_type 
+                FROM Listings 
+                WHERE 1=1
         """
         params = {}
 
@@ -231,13 +235,15 @@ def listing_details(listing_id):
     if listing:
         listing_id, block, street_name, floor_area_sqm, town_estate, flat_type, price, desc, cea_num = listing
 
-     # Fetch agent's title and name based on the CEA number by joining Agents and Users tables
-    cursor.execute("""
-        SELECT Agents.agentTitle, Users.name 
-        FROM Agents 
-        JOIN Users ON Agents.userID = Users.userID 
-        WHERE Agents.CEANumber = %s
-    """, (cea_num,))
+
+    # Fetch agent's title and name based on the CEA number by joining Agents and Users tables
+    agent_query = """
+                  SELECT Agents.agentTitle, Users.name 
+                  FROM Agents 
+                  JOIN Users ON Agents.userID = Users.userID 
+                  WHERE Agents.CEANumber = %s
+    """
+    cursor.execute(agent_query, (cea_num,))
     
     agent_info = cursor.fetchone()  # Fetch agent's title and name
 
@@ -341,7 +347,10 @@ def login():
         cursor = connection.cursor()
 
         # Query to check user credentials
-        query = "SELECT userID, password FROM Users WHERE email = %s"
+        query = """
+                SELECT userID, password
+                FROM Users WHERE email = %s
+        """
         cursor.execute(query, (form.email.data,))
         result = cursor.fetchone()
 
@@ -351,7 +360,11 @@ def login():
             # if pbkdf2_sha256.verify(form.password.data, stored_hashed_password):
             if True:
                 # Check if the user is an agent
-                agent_query = "SELECT CEANumber FROM Agents WHERE userID = %s"
+                agent_query = """
+                              SELECT CEANumber 
+                              FROM Agents 
+                              WHERE userID = %s
+                """
                 cursor.execute(agent_query, (user_id,))
                 agent_result = cursor.fetchone()
 
@@ -395,9 +408,9 @@ def add_listing():
         cursor = connection.cursor()
 
         # Insert listing details into Listings table
-        listing_query = """
-            INSERT INTO Listings (block, street_name, floorAreaSQM, town_estate, flat_type, price, listing_desc, CEANumber)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        new_listing_query = """
+                        INSERT INTO Listings (block, street_name, floorAreaSQM, town_estate, flat_type, price, listing_desc, CEANumber)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """
         listing_values = (
             form.block.data,
@@ -409,7 +422,7 @@ def add_listing():
             form.listing_desc.data,
             session["CEANumber"],
         )
-        cursor.execute(listing_query, listing_values)
+        cursor.execute(new_listing_query, listing_values)
         connection.commit()
         cursor.close()
 
