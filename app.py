@@ -473,66 +473,80 @@ def appointment():
     connection = get_db()
     cursor = connection.cursor()
 
-    # Retrieve available agency names and agent titles for dropdowns
-    cursor.execute("SELECT DISTINCT agencyName FROM Agency")
-    agency_names = cursor.fetchall()
-    cursor.execute("SELECT DISTINCT agentTitle FROM Agents")
-    agent_titles = cursor.fetchall()
+    try:
+        # Start a MySQL transaction
+        connection.begin()
 
-    # Handle filters and search query from the form
-    filter_agency_name = request.form.get("filter_agency_name")
-    filter_agent_title = request.form.get("filter_agent_title")
-    review_filter = request.form.get("review_filter")
-    search_query = request.args.get("search_query", "").strip()
-    print()
+        # Retrieve available agency names and agent titles for dropdowns
+        cursor.execute("SELECT DISTINCT agencyName FROM Agency")
+        agency_names = cursor.fetchall()
+        cursor.execute("SELECT DISTINCT agentTitle FROM Agents")
+        agent_titles = cursor.fetchall()
 
-    # Base query for MySQL
-    base_query = "SELECT u.name, a.agentTitle, a.CEANumber, ag.agencyName FROM Users u JOIN Agents a ON u.userID = a.userID JOIN Agency ag ON a.agencyLicenseNo = ag.agencyLicenseNo"
+        # Handle filters and search query from the form
+        filter_agency_name = request.form.get("filter_agency_name")
+        filter_agent_title = request.form.get("filter_agent_title")
+        review_filter = request.form.get("review_filter")
+        search_query = request.args.get("search_query", "").strip()
 
-    # Apply filters
-    conditions = []
-    params = []
-    if filter_agency_name:
-        conditions.append("ag.agencyName = %s")
-        params.append(filter_agency_name)
-    if filter_agent_title:
-        conditions.append("a.agentTitle = %s")
-        params.append(filter_agent_title)
-    if search_query:
-        conditions.append("u.name LIKE %s")
-        params.append(f"%{search_query}%")
+        # Base query for MySQL
+        base_query = "SELECT u.name, a.agentTitle, a.CEANumber, ag.agencyName FROM Users u JOIN Agents a ON u.userID = a.userID JOIN Agency ag ON a.agencyLicenseNo = ag.agencyLicenseNo"
 
-    # Adding WHERE clause if there are filter conditions
-    if conditions:
-        base_query += " WHERE " + " AND ".join(conditions)
+        # Apply filters
+        conditions = []
+        params = []
+        if filter_agency_name:
+            conditions.append("ag.agencyName = %s")
+            params.append(filter_agency_name)
+        if filter_agent_title:
+            conditions.append("a.agentTitle = %s")
+            params.append(filter_agent_title)
+        if search_query:
+            conditions.append("u.name LIKE %s")
+            params.append(f"%{search_query}%")
 
-    cursor.execute(base_query, params)
-    agents = cursor.fetchall()
+        # Adding WHERE clause if there are filter conditions
+        if conditions:
+            base_query += " WHERE " + " AND ".join(conditions)
 
-    # Combine MySQL and MongoDB data
-    combined_agents = []
-    for agent in agents:
-        agent_name = agent[0]  # The agent's name
-        safe_agent_name = re.escape(agent_name.strip())
+        cursor.execute(base_query, params)
+        agents = cursor.fetchall()
 
-        # Fetch the average rating from MongoDB
-        avg_rating_pipeline = [
-            {"$match": {"agentName": {"$regex": f"^{safe_agent_name}$", "$options": "i"}}},
-            {"$unwind": "$reviews"},
-            {"$group": {"_id": None, "averageRating": {"$avg": "$reviews.rating"}}}
-        ]
+        # Combine MySQL and MongoDB data
+        combined_agents = []
+        for agent in agents:
+            agent_name = agent[0]  # The agent's name
+            safe_agent_name = re.escape(agent_name.strip())
 
-        avg_rating_result = list(collection.aggregate(avg_rating_pipeline))
-        avg_rating = avg_rating_result[0]["averageRating"] if avg_rating_result else None
+            # Fetch the average rating from MongoDB
+            avg_rating_pipeline = [
+                {"$match": {"agentName": {"$regex": f"^{safe_agent_name}$", "$options": "i"}}},
+                {"$unwind": "$reviews"},
+                {"$group": {"_id": None, "averageRating": {"$avg": "$reviews.rating"}}}
+            ]
 
-        # Filter based on review rating, if specified
-        if review_filter and (avg_rating is None or avg_rating < float(review_filter)):
-            continue  # Skip this agent if average rating is below the filter threshold
+            avg_rating_result = list(collection.aggregate(avg_rating_pipeline))
+            avg_rating = avg_rating_result[0]["averageRating"] if avg_rating_result else None
 
-        # Append agent details with average rating
-        combined_agents.append((*agent, avg_rating))
+            # Filter based on review rating, if specified
+            if review_filter and (avg_rating is None or avg_rating < float(review_filter)):
+                continue  # Skip this agent if average rating is below the filter threshold
 
-    return render_template("appointment.html", agents=combined_agents, agency_names=agency_names, agent_titles=agent_titles)
+            # Append agent details with average rating
+            combined_agents.append((*agent, avg_rating))
+
+        # Commit the MySQL transaction if everything is successful
+        connection.commit()
+
+        return render_template("appointment.html", agents=combined_agents, agency_names=agency_names, agent_titles=agent_titles)
+
+    except Exception as e:
+        # Rollback the MySQL transaction in case of an error
+        connection.rollback()
+        return f"Transaction failed: {str(e)}"
+    finally:
+        cursor.close()
+        client.close()
 
 
 
