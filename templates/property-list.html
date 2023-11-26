@@ -108,29 +108,10 @@
                                             <!-- Floor Area (SQM) -->
                                             
                                             <!-- Add to Favorites Button -->
-                                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addToFavoritesModal{{ listing[0] }}">
+                                            <button class="btn btn-primary" data-bs-toggle="modal" onclick="addToFavoritesLogic('{{ listing[0] }}')">
                                                 Add to Favorites
                                             </button>
 
-                                            <!-- Add to Favorites Modal -->
-                                            <div class="modal fade" id="addToFavoritesModal{{ listing[0] }}" tabindex="-1" aria-labelledby="addToFavoritesModalLabel" aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="addToFavoritesModalLabel">Add to Favorites</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            Are you sure you want to add this listing to your favorites?
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                            <!-- Add logic here for adding to favorites -->
-                                                            <button type="button" class="btn btn-primary" onclick="addToFavoritesLogic('{{ listing[0] }}')" data-bs-dismiss="modal">Add</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
                                             <!-- <small class="flex-fill text-center border-end py-2"><i class="fa fa-ruler-combined text-primary me-2"></i>{{ listing[3] }} Sqft</small> -->
                                         </div>
                                     </div>
@@ -169,30 +150,6 @@
                                         <div class="d-flex border-top">
                                             <!-- Floor Area (SQM) -->
                                             
-                                            <!-- Add to Favorites Button -->
-                                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addToFavoritesModal{{ listing[0] }}">
-                                                Add to Favorites
-                                            </button>
-
-                                            <!-- Add to Favorites Modal -->
-                                            <div class="modal fade" id="addToFavoritesModal{{ listing[0] }}" tabindex="-1" aria-labelledby="addToFavoritesModalLabel" aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="addToFavoritesModalLabel">Add to Favorites</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            Are you sure you want to add this listing to your favorites?
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                            <!-- Add logic here for adding to favorites -->
-                                                            <button type="button" class="btn btn-primary" onclick="addToFavoritesLogic('{{ listing[0] }}')" data-bs-dismiss="modal">Add</button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
                                             <!-- <small class="flex-fill text-center border-end py-2"><i class="fa fa-ruler-combined text-primary me-2"></i>{{ listing[3] }} Sqft</small> -->
                                         </div>
                                     </div>
